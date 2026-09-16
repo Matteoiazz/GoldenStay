@@ -1,1 +1,99 @@
-<p>navbar works!</p>
+<header class="nav" [class.nav--solid]="!transparent()">
+  <div class="nav__inner shell">
+
+    <a class="brand" routerLink="/" aria-label="GoldenStay, torna alla home">
+      <span class="brand__mark" aria-hidden="true"></span>
+      <span class="brand__word">Golden<em>Stay</em></span>
+    </a>
+
+    <nav class="links" aria-label="Navigazione principale">
+      @if (!onHome()) {
+        <a class="links__item" routerLink="/">Home</a>
+      } @else {
+        <a class="links__item" href="#camere">Le camere</a>
+        <a class="links__item" href="#esperienza">L'esperienza</a>
+        <a class="links__item" href="#indirizzo">Dove siamo</a>
+      }
+      @if (isAdmin()) {
+        <a class="links__item links__item--admin" routerLink="/admin-dashboard"
+           routerLinkActive="is-active">
+          <app-icon name="crown" [size]="15" />
+          Back office
+        </a>
+      }
+    </nav>
+
+    <div class="tail">
+      @if (auth.currentUser(); as user) {
+        <div class="account">
+          <button class="account__trigger" type="button" (click)="toggleMenu()"
+                  [attr.aria-expanded]="menuOpen()" aria-haspopup="menu">
+            <span class="account__avatar">{{ initials() }}</span>
+            <span class="account__name">{{ user.name || 'Ospite' }}</span>
+            <app-icon class="account__caret" name="chevronDown" [size]="14" />
+          </button>
+
+          @if (menuOpen()) {
+            <div class="sheet" role="menu">
+              <div class="sheet__head">
+                <p class="sheet__name">{{ user.name || 'Ospite' }}</p>
+                <p class="sheet__mail">{{ user.email }}</p>
+              </div>
+              <div class="sheet__divider"></div>
+              @if (isAdmin()) {
+                <a class="sheet__item" routerLink="/admin-dashboard" role="menuitem">
+                  <app-icon name="layers" [size]="17" /> Gestione camere
+                </a>
+                <a class="sheet__item" routerLink="/admin/booking" role="menuitem">
+                  <app-icon name="receipt" [size]="17" /> Prenotazioni
+                </a>
+                <div class="sheet__divider"></div>
+              }
+              <button class="sheet__item sheet__item--exit" type="button" role="menuitem"
+                      (click)="logout()">
+                <app-icon name="logout" [size]="17" /> Esci
+              </button>
+            </div>
+          }
+        </div>
+      } @else {
+        <a class="links__item tail__login" routerLink="/login">Accedi</a>
+        <a class="pill" routerLink="/register">Registrati</a>
+      }
+
+      <button class="burger" type="button" (click)="toggleDrawer()"
+              [attr.aria-expanded]="drawerOpen()" aria-label="Apri il menu">
+        <app-icon [name]="drawerOpen() ? 'close' : 'menu'" [size]="22" />
+      </button>
+    </div>
+  </div>
+</header>
+
+@if (drawerOpen()) {
+  <div class="drawer">
+    <nav class="drawer__nav">
+      <a class="drawer__link" routerLink="/" (click)="closeAll()">Home</a>
+      <a class="drawer__link" href="#camere" (click)="closeAll()">Le camere</a>
+      <a class="drawer__link" href="#esperienza" (click)="closeAll()">L'esperienza</a>
+      <a class="drawer__link" href="#indirizzo" (click)="closeAll()">Dove siamo</a>
+
+      @if (isAdmin()) {
+        <a class="drawer__link" routerLink="/admin-dashboard" (click)="closeAll()">Back office</a>
+      }
+    </nav>
+
+    <div class="drawer__foot">
+      @if (auth.currentUser(); as user) {
+        <p class="drawer__greeting">Accesso come <strong>{{ user.name || user.email }}</strong></p>
+        <button class="btn btn--ghost btn--wide" type="button" (click)="logout()">Esci</button>
+      } @else {
+        <a class="btn btn--ghost btn--wide" routerLink="/login" (click)="closeAll()">Accedi</a>
+        <a class="btn btn--brass btn--wide" routerLink="/register" (click)="closeAll()">Registrati</a>
+      }
+    </div>
+  </div>
+}
+
+@if (!onHome()) {
+  <div class="nav-spacer"></div>
+}

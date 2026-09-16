@@ -1,123 +1,177 @@
-<div class="admin-container">
+<app-admin-shell heading="Camere"
+                 subtitle="Catalogo pubblicato sul sito e disponibile alla prenotazione.">
 
-  <aside class="sidebar">
-    <div class="sidebar-header">
-      <h2>Golden<span class="text-gold">Stay</span></h2>
-      <p class="admin-label">Pannello Admin</p>
+  <div slot="actions">
+    <button class="btn btn--ghost btn--sm" type="button" (click)="refresh()">
+      <app-icon class="btn__icon" name="refresh" [size]="15" />
+      Aggiorna
+    </button>
+    <a class="btn btn--brass btn--sm" routerLink="/create-room">
+      <app-icon class="btn__icon" name="plus" [size]="15" />
+      Nuova camera
+    </a>
+  </div>
+
+  <section class="tiles">
+    <article class="tile">
+      <p class="tile__label">Camere a catalogo</p>
+      <p class="tile__value">{{ stats().count }}</p>
+    </article>
+    <article class="tile">
+      <p class="tile__label">Tariffa media</p>
+      <p class="tile__value">{{ stats().average | currency: 'EUR' : 'symbol' : '1.0-0' }}</p>
+    </article>
+    <article class="tile">
+      <p class="tile__label">Posti letto totali</p>
+      <p class="tile__value">{{ stats().beds }}</p>
+    </article>
+    <article class="tile">
+      <p class="tile__label">Tariffa più alta</p>
+      <p class="tile__value">{{ stats().top | currency: 'EUR' : 'symbol' : '1.0-0' }}</p>
+    </article>
+  </section>
+
+  <div class="board">
+    <div class="board__head">
+      <h2 class="board__title">Elenco camere</h2>
+      <label class="finder">
+        <app-icon name="search" [size]="16" />
+        <input type="search" placeholder="Cerca per nome o descrizione"
+               [value]="query()" (input)="query.set($any($event.target).value)">
+      </label>
     </div>
 
-    <nav class="sidebar-menu">
-
-      <a class="menu-item"
-         routerLink="/admin-dashboard"
-         routerLinkActive="active"
-         [routerLinkActiveOptions]="{exact: true}">
-        <i class="icon">🏠</i> Gestione Stanze
-      </a>
-
-      <a class="menu-item"
-         routerLink="/admin/booking"
-         routerLinkActive="active">
-        <i class="icon">📅</i> Prenotazioni
-      </a>
-
-      <div class="spacer"></div>
-
-    </nav>
-  </aside>
-
-
-  <main class="main-content">
-
-    <header class="page-header">
-      <div class="header-text">
-        <h1>Gestione Stanze</h1>
-        <p class="subtitle">Visualizza e gestisci l'inventario del tuo Hotel.</p>
+    @if (rooms.loading()) {
+      <div class="board__empty">
+        <span class="board__spin"></span>
+        Caricamento del catalogo…
       </div>
-      <button class="btn-add" routerLink="/create-room">
-        + Aggiungi Nuova Stanza
-      </button>
-    </header>
-
-    <div class="rooms-grid">
-
-      @for (room of roomService.rooms(); track room.id) {
-
-        <div class="room-card">
-          <div class="card-image">
-            <img [src]="room.imageUrl || 'https://via.placeholder.com/300x200?text=No+Image'" [alt]="room.title">
-            <span class="status-badge active">Attiva</span>
-          </div>
-
-          <div class="card-body">
-            <h3>{{ room.title }}</h3>
-            <p class="room-details">Ospiti: {{ room.capacity }} • {{ room.description }}</p>
-
-            <div class="price">
-              {{ room.pricePerNight | currency:'EUR' }}
-              <span class="night">/ notte</span>
-            </div>
-
-            <div class="actions">
-              <button class="btn-edit" (click)="apriModifica(room)">✏️ Modifica</button>
-              <button class="btn-delete" (click)="eliminaStanza(room.id!)">🗑️ Elimina</button>
-            </div>
-          </div>
-        </div>
-
-      } @empty {
-        <div class="no-rooms">
-          <p>Nessuna stanza trovata. Inizia a produrle!</p>
-        </div>
-      }
-
-    </div>
-    @if (editingRoom) {
-      <div class="modal-backdrop" (click)="chiudiModale()">
-        <div class="modal-content" (click)="$event.stopPropagation()">
-
-          <div class="modal-header">
-            <h2>✏️ Modifica Stanza</h2>
-            <button class="btn-close" (click)="chiudiModale()">✖</button>
-          </div>
-
-          <div class="modal-body">
-
-            <div class="form-group">
-              <label>Titolo Stanza</label>
-              <input type="text" [(ngModel)]="editingRoom.title" placeholder="Es. Suite Imperiale">
-            </div>
-
-            <div class="form-group">
-              <label>Descrizione</label>
-              <textarea [(ngModel)]="editingRoom.description" rows="3"></textarea>
-            </div>
-
-            <div class="row">
-              <div class="form-group">
-                <label>Prezzo (€)</label>
-                <input type="number" [(ngModel)]="editingRoom.pricePerNight">
-              </div>
-              <div class="form-group">
-                <label>Capienza (Persone)</label>
-                <input type="number" [(ngModel)]="editingRoom.capacity">
-              </div>
-            </div>
-
-            <div class="form-group">
-              <label>URL Immagine</label>
-              <input type="text" [(ngModel)]="editingRoom.imageUrl">
-            </div>
-
-          </div>
-
-          <div class="modal-footer">
-            <button class="btn-cancel" (click)="chiudiModale()">Annulla</button>
-            <button class="btn-save" (click)="salvaModifiche()">💾 Salva Modifiche</button>
-          </div>
-
-        </div>
+    } @else if (visible().length === 0) {
+      <div class="board__empty">
+        <app-icon name="layers" [size]="26" />
+        @if (query()) {
+          Nessuna camera corrisponde a “{{ query() }}”.
+        } @else {
+          Il catalogo è vuoto: crea la prima camera dalla fabbrica.
+        }
+      </div>
+    } @else {
+      <div class="board__scroll">
+        <table class="grid-table">
+          <thead>
+            <tr>
+              <th>Camera</th>
+              <th>Capienza</th>
+              <th>Tariffa</th>
+              <th>Stato</th>
+              <th class="grid-table__right">Azioni</th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (room of visible(); track room.id) {
+              <tr>
+                <td>
+                  <div class="cell-room">
+                    <span class="cell-room__frame imgbox">
+                      <img class="cell-room__thumb" appImageFallback [src]="room.imageUrl"
+                           [alt]="room.title" loading="lazy">
+                    </span>
+                    <div class="cell-room__text">
+                      <strong>{{ room.title }}</strong>
+                      <small>{{ room.description || 'Nessuna descrizione' }}</small>
+                    </div>
+                  </div>
+                </td>
+                <td>
+                  <span class="cell-guests">
+                    <app-icon name="guests" [size]="15" /> {{ room.capacity }}
+                  </span>
+                </td>
+                <td class="cell-price">{{ room.pricePerNight | currency: 'EUR' }}</td>
+                <td><span class="badge badge--pine"><span class="badge__dot"></span> Pubblicata</span></td>
+                <td class="grid-table__right">
+                  <div class="cell-actions">
+                    <button class="icon-btn" type="button" aria-label="Modifica"
+                            (click)="openEditor(room)">
+                      <app-icon name="edit" [size]="16" />
+                    </button>
+                    <button class="icon-btn icon-btn--danger" type="button" aria-label="Elimina"
+                            (click)="remove(room)">
+                      <app-icon name="trash" [size]="16" />
+                    </button>
+                  </div>
+                </td>
+              </tr>
+            }
+          </tbody>
+        </table>
       </div>
     }
-  </main>
-</div>
+  </div>
+
+  @if (draft(); as room) {
+    <div class="drawer-veil" (click)="closeEditor()">
+      <aside class="editor" role="dialog" aria-modal="true" (click)="$event.stopPropagation()">
+        <header class="editor__head">
+          <div>
+            <p class="eyebrow">Modifica</p>
+            <h2 class="editor__title">{{ room.title || 'Camera' }}</h2>
+          </div>
+          <button class="icon-btn" type="button" aria-label="Chiudi" (click)="closeEditor()">
+            <app-icon name="close" [size]="17" />
+          </button>
+        </header>
+
+        <div class="editor__body">
+          <figure class="editor__preview imgbox">
+            <img appImageFallback [src]="room.imageUrl" [alt]="room.title">
+          </figure>
+
+          <label class="field">
+            <span class="field__label">Titolo</span>
+            <input class="field__input" type="text" [ngModel]="room.title" name="editTitle"
+                   (ngModelChange)="patchDraft('title', $event)"
+                   placeholder="Es. Suite Imperiale">
+          </label>
+
+          <label class="field">
+            <span class="field__label">Descrizione</span>
+            <textarea class="field__area" rows="3" [ngModel]="room.description" name="editDesc"
+                      (ngModelChange)="patchDraft('description', $event)"
+                      placeholder="Cosa rende speciale questa camera"></textarea>
+          </label>
+
+          <div class="field-row">
+            <label class="field">
+              <span class="field__label">Tariffa a notte (€)</span>
+              <input class="field__input" type="number" min="0" step="5"
+                     [ngModel]="room.pricePerNight" name="editPrice"
+                     (ngModelChange)="patchDraft('pricePerNight', +$event)">
+            </label>
+            <label class="field">
+              <span class="field__label">Capienza</span>
+              <input class="field__input" type="number" min="1" max="12"
+                     [ngModel]="room.capacity" name="editCapacity"
+                     (ngModelChange)="patchDraft('capacity', +$event)">
+            </label>
+          </div>
+
+          <label class="field">
+            <span class="field__label">Immagine (URL)</span>
+            <input class="field__input" type="url" [ngModel]="room.imageUrl" name="editImage"
+                   (ngModelChange)="patchDraft('imageUrl', $event)"
+                   placeholder="https://…">
+          </label>
+        </div>
+
+        <footer class="editor__foot">
+          <button class="btn btn--ghost btn--sm" type="button" (click)="closeEditor()">Annulla</button>
+          <button class="btn btn--brass btn--sm" type="button" [disabled]="saving()" (click)="save()">
+            @if (saving()) { Salvataggio… } @else { Salva modifiche }
+          </button>
+        </footer>
+      </aside>
+    </div>
+  }
+
+</app-admin-shell>

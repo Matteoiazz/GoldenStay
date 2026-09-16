@@ -1,68 +1,195 @@
-<div class="modal-overlay">
-  <div class="modal-content">
+<div class="veil" (click)="step() !== 'loading' && close.emit()">
+  <div class="panel" role="dialog" aria-modal="true" aria-labelledby="payTitle"
+       (click)="$event.stopPropagation()">
 
-    <div class="modal-header">
-      <h3>Pagamento Sicuro</h3>
-      <button class="close-btn" (click)="close.emit()">✕</button>
-    </div>
+    <header class="panel__head">
+      <div>
+        <p class="panel__step">
+          @switch (step()) {
+            @case ('form')    { Passo 1 di 2 · Pagamento }
+            @case ('loading') { Passo 2 di 2 · Conferma }
+            @default          { Prenotazione confermata }
+          }
+        </p>
+        <h2 class="panel__title" id="payTitle">
+          @if (step() === 'success') { Ci vediamo presto } @else { Completa la prenotazione }
+        </h2>
+      </div>
 
-    <div class="modal-body">
+      <button class="panel__close" type="button" aria-label="Chiudi"
+              [disabled]="step() === 'loading'" (click)="close.emit()">
+        <app-icon name="close" [size]="18" />
+      </button>
+    </header>
 
-      @if (step === 'form') {
-        <div class="summary">
-          Stai prenotando: <strong>{{ room?.title || 'Stanza GoldenStay' }}</strong><br>
-          Totale da pagare: <span class="total">{{ totalPrice | currency:'EUR' }}</span>
+    <div class="panel__body">
+
+      @if (step() === 'form') {
+        <section class="recap">
+          <div class="recap__row">
+            <span class="recap__label">Camera</span>
+            <span class="recap__value">{{ room?.title || 'Camera GoldenStay' }}</span>
+          </div>
+          <div class="recap__row">
+            <span class="recap__label">Soggiorno</span>
+            <span class="recap__value">
+              {{ checkIn | date: 'd MMM' }} → {{ checkOut | date: 'd MMM yyyy' }}
+            </span>
+          </div>
+          <div class="recap__row">
+            <span class="recap__label">Ospiti</span>
+            <span class="recap__value">
+              {{ guests }} · {{ nights }} {{ nights === 1 ? 'notte' : 'notti' }}
+            </span>
+          </div>
+          <div class="recap__total">
+            <span>Totale</span>
+            <strong>{{ totalPrice | currency: 'EUR' }}</strong>
+          </div>
+        </section>
+
+        <div class="plastic" [class.plastic--flipped]="flipped()" [class]="'plastic--' + brand()">
+          <div class="plastic__face plastic__front">
+            <div class="plastic__top">
+              <span class="plastic__chip" aria-hidden="true"></span>
+              <span class="plastic__brand">
+                @switch (brand()) {
+                  @case ('visa')       { VISA }
+                  @case ('mastercard') { mastercard }
+                  @case ('amex')       { AMEX }
+                  @default             { GoldenStay }
+                }
+              </span>
+            </div>
+            <p class="plastic__number">{{ maskedNumber() }}</p>
+            <div class="plastic__bottom">
+              <span class="plastic__slot">
+                <small>Intestatario</small>
+                {{ holder() || 'NOME COGNOME' }}
+              </span>
+              <span class="plastic__slot plastic__slot--right">
+                <small>Scadenza</small>
+                {{ expiry() || 'MM/AA' }}
+              </span>
+            </div>
+          </div>
+
+          <div class="plastic__face plastic__back">
+            <span class="plastic__stripe" aria-hidden="true"></span>
+            <span class="plastic__cvv">{{ cvv() || '•••' }}</span>
+          </div>
         </div>
 
-        <form (ngSubmit)="processPayment()">
-          <div class="form-group">
-            <label>Intestatario Carta</label>
-            <input type="text" placeholder="Mario Rossi" required
-                   [(ngModel)]="cardName" name="cardName">
+        <form class="pay" (ngSubmit)="pay()" novalidate>
+          <label class="field">
+            <span class="field__label">Intestatario</span>
+            <input class="field__input" type="text" name="holder" autocomplete="cc-name"
+                   placeholder="Mario Rossi" [ngModel]="holder()"
+                   (ngModelChange)="holder.set($event)"
+                   [class.is-invalid]="touched() && errors().holder"
+                   (focus)="flipped.set(false)">
+            @if (touched() && errors().holder) {
+              <span class="field__error"><app-icon name="alert" [size]="13" /> Inserisci il nome sulla carta</span>
+            }
+          </label>
+
+          <label class="field">
+            <span class="field__label">Numero carta</span>
+            <input class="field__input" type="text" name="number" inputmode="numeric"
+                   autocomplete="cc-number" placeholder="4242 4242 4242 4242"
+                   [ngModel]="number()" (ngModelChange)="onNumberInput($event)"
+                   [class.is-invalid]="touched() && errors().number"
+                   (focus)="flipped.set(false)">
+            @if (touched() && errors().number) {
+              <span class="field__error">
+                <app-icon name="alert" [size]="13" /> Servono {{ numberLength() }} cifre
+              </span>
+            }
+          </label>
+
+          <div class="field-row">
+            <label class="field">
+              <span class="field__label">Scadenza</span>
+              <input class="field__input" type="text" name="expiry" inputmode="numeric"
+                     autocomplete="cc-exp" placeholder="MM/AA" maxlength="5"
+                     [ngModel]="expiry()" (ngModelChange)="onExpiryInput($event)"
+                     [class.is-invalid]="touched() && errors().expiry"
+                     (focus)="flipped.set(false)">
+              @if (touched() && errors().expiry) {
+                <span class="field__error"><app-icon name="alert" [size]="13" /> Data non valida</span>
+              }
+            </label>
+
+            <label class="field">
+              <span class="field__label">CVV</span>
+              <input class="field__input" type="text" name="cvv" inputmode="numeric"
+                     autocomplete="cc-csc" [attr.placeholder]="isAmex() ? '1234' : '123'"
+                     [ngModel]="cvv()" (ngModelChange)="onCvvInput($event)"
+                     [class.is-invalid]="touched() && errors().cvv"
+                     (focus)="flipped.set(true)" (blur)="flipped.set(false)">
+              @if (touched() && errors().cvv) {
+                <span class="field__error">
+                  <app-icon name="alert" [size]="13" /> {{ cvvLength() }} cifre
+                </span>
+              }
+            </label>
           </div>
 
-          <div class="form-group">
-            <label>Numero Carta</label>
-            <input type="text" placeholder="0000 0000 0000 0000" maxlength="19" required
-                   [(ngModel)]="cardNumber" name="cardNumber"
-                   (input)="formatCardNumber($event)">
-          </div>
+          <button class="btn btn--brass btn--wide pay__submit" type="submit">
+            <app-icon class="btn__icon" name="lock" [size]="15" />
+            Paga {{ totalPrice | currency: 'EUR' }}
+          </button>
 
-          <div class="row">
-            <div class="form-group">
-              <label>Scadenza</label>
-              <input type="text" placeholder="MM/YY" maxlength="5" required
-                     [(ngModel)]="cardExpiry" name="cardExpiry"
-                     (input)="formatExpiry($event)">
-            </div>
-            <div class="form-group">
-              <label>CVV</label>
-              <input type="text" placeholder="123" maxlength="3" required
-                     [(ngModel)]="cardCvv" name="cardCvv"
-                     (input)="formatCVV($event)">
-            </div>
-          </div>
-
-          <button type="submit" class="pay-btn">Paga Ora</button>
+          <p class="pay__seal">
+            <app-icon name="shield" [size]="14" />
+            Transazione simulata a scopo dimostrativo: nessun dato viene trasmesso a circuiti reali.
+          </p>
         </form>
       }
 
-      @if (step === 'loading') {
-        <div class="loading-state">
-          <div class="spinner"></div>
-          <p>Elaborazione pagamento e prenotazione...</p>
+      @if (step() === 'loading') {
+        <div class="waiting">
+          <span class="waiting__ring" aria-hidden="true"></span>
+          <h3 class="waiting__title">Stiamo confermando</h3>
+          <p class="waiting__text">Autorizzazione della carta e blocco della camera in corso…</p>
         </div>
       }
 
-      @if (step === 'success') {
-        <div class="success-state">
-          <div class="check-icon">✅</div>
-          <h3>Pagamento Riuscito!</h3>
-          <p>La tua prenotazione è stata salvata nel database.</p>
+      @if (step() === 'success') {
+        <div class="done">
+          <span class="done__seal" aria-hidden="true">
+            <app-icon name="check" [size]="30" [weight]="2" />
+          </span>
 
-          <button class="download-btn" (click)="generatePDF()">
-            📄 Scarica Ricevuta (PDF)
-          </button>
+          <h3 class="done__title">{{ room?.title }} è tua</h3>
+          <p class="done__text">
+            Abbiamo inviato la conferma a
+            <strong>{{ email || 'la tua email' }}</strong>. Il ricevimento ti aspetta
+            dalle 15:00 del {{ checkIn | date: 'd MMMM' }}.
+          </p>
+
+          <div class="done__ticket">
+            <div class="done__ticket-row">
+              <span>Riferimento</span>
+              <strong>{{ reference() }}</strong>
+            </div>
+            <div class="done__ticket-row">
+              <span>Soggiorno</span>
+              <strong>{{ checkIn | date: 'd MMM' }} → {{ checkOut | date: 'd MMM yyyy' }}</strong>
+            </div>
+            <div class="done__ticket-row">
+              <span>Totale</span>
+              <strong>{{ totalPrice | currency: 'EUR' }}</strong>
+            </div>
+          </div>
+
+          <div class="done__actions">
+            <button class="btn btn--ghost btn--sm" type="button" (click)="close.emit()">Chiudi</button>
+            <button class="btn btn--brass btn--sm" type="button" (click)="downloadReceipt()">
+              <app-icon class="btn__icon" name="download" [size]="15" />
+              Scarica la ricevuta
+            </button>
+          </div>
         </div>
       }
 

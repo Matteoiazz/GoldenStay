@@ -12,6 +12,8 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
+import java.util.Map;
+import java.util.Optional;
 
 @RestController
 @RequestMapping("/api/bookings")
@@ -28,48 +30,75 @@ public class BookingController {
     private RoomRepository roomRepository;
 
     // 1. CREA PRENOTAZIONE
-    @PostMapping("/salva")
+    @PostMapping
     public ResponseEntity<?> createBooking(@RequestBody BookingRequest request) {
 
-        // Cerchiamo l'Utente e la Stanza nel DB usando gli ID inviati
-        User user = userRepository.findById(request.getUserId())
-                .orElseThrow(() -> new RuntimeException("Errore: Utente non trovato con ID " + request.getUserId()));
+        if (request.getCheckIn() == null || request.getCheckOut() == null
+                || !request.getCheckOut().isAfter(request.getCheckIn())) {
+            return ResponseEntity.badRequest()
+                    .body(Map.of("error", "La partenza deve essere successiva all'arrivo"));
+        }
 
-        Room room = roomRepository.findById(request.getRoomId())
-                .orElseThrow(() -> new RuntimeException("Errore: Stanza non trovata con ID " + request.getRoomId()));
+        Optional<User> user = userRepository.findById(request.getUserId());
+        if (user.isEmpty()) {
+            return ResponseEntity.badRequest().body(Map.of("error", "Utente non trovato"));
+        }
 
-        // Creiamo l'oggetto Booking vero e proprio
+        Optional<Room> room = roomRepository.findById(request.getRoomId());
+        if (room.isEmpty()) {
+            return ResponseEntity.badRequest().body(Map.of("error", "Camera non trovata"));
+        }
+
+        // La disponibilità va verificata di nuovo qui: fra la ricerca e il
+        // pagamento un altro ospite potrebbe aver preso la stessa camera.
+        if (bookingRepository.isRoomBusy(room.get().getId(), request.getCheckIn(), request.getCheckOut())) {
+            return ResponseEntity.status(409)
+                    .body(Map.of("error", "La camera non è più disponibile per queste date"));
+        }
+
         Booking booking = new Booking();
-        booking.setUser(user);
-        booking.setRoom(room);
+        booking.setUser(user.get());
+        booking.setRoom(room.get());
         booking.setCheckIn(request.getCheckIn());
         booking.setCheckOut(request.getCheckOut());
         booking.setTotalPrice(request.getTotalPrice());
-        booking.setStatus("CONFERMATA"); // Impostiamo lo stato iniziale
+        booking.setStatus(Booking.CONFERMATA);
 
-        // Salviamo nel DB
-        Booking savedBooking = bookingRepository.save(booking);
-
-        return ResponseEntity.ok(savedBooking);
+        return ResponseEntity.ok(bookingRepository.save(booking));
     }
 
-    // 2. LISTA DI TUTTE LE PRENOTAZIONI (Admin)
+    // 2. REGISTRO COMPLETO (back office)
     @GetMapping("/all")
     public List<Booking> getAllBookings() {
-        return bookingRepository.findAll();
+        return bookingRepository.findAllByOrderByIdDesc();
     }
 
-    // 3. CANCELLA UNA PRENOTAZIONE (Admin)
-
-    @DeleteMapping("/cancel/{id}")
+    // 3. ANNULLA: la riga resta a registro con stato CANCELLATA
+    @PutMapping("/{id}/cancel")
     public ResponseEntity<?> cancelBooking(@PathVariable Long id) {
-        if (bookingRepository.existsById(id)) {
-            bookingRepository.deleteById(id);
-            // SOLUZIONE: Restituiamo un JSON valido
-            return ResponseEntity.ok(java.util.Map.of("message", "Prenotazione cancellata"));
-        } else {
-            return ResponseEntity.status(404).body(java.util.Map.of("error", "Prenotazione non trovata"));
-        }
+        return bookingRepository.findById(id)
+                .<ResponseEntity<?>>map(booking -> {
+                    booking.setStatus(Booking.CANCELLATA);
+                    return ResponseEntity.ok(bookingRepository.save(booking));
+                })
+                .orElseGet(() -> ResponseEntity.status(404)
+                        .body(Map.of("error", "Prenotazione non trovata")));
     }
 
+    // 4. ELIMINA DEFINITIVAMENTE
+    @DeleteMapping("/{id}")
+    public ResponseEntity<?> deleteBooking(@PathVariable Long id) {
+        if (!bookingRepository.existsById(id)) {
+            return ResponseEntity.status(404).body(Map.of("error", "Prenotazione non trovata"));
+        }
+        bookingRepository.deleteById(id);
+        return ResponseEntity.ok(Map.of("message", "Prenotazione eliminata"));
+    }
+
+    // 5. SVUOTA IL REGISTRO
+    @DeleteMapping("/all")
+    public ResponseEntity<?> deleteAllBookings() {
+        bookingRepository.deleteAll();
+        return ResponseEntity.ok(Map.of("message", "Registro svuotato"));
+    }
 }

@@ -1,6 +1,9 @@
 import { PricingStrategy } from './price.strategy';
 
-// 3. Il Context
+/**
+ * Context del pattern Strategy: conosce l'interfaccia della strategia ma non
+ * la sua implementazione, e permette di sostituirla a runtime.
+ */
 export class BookingContext {
   private strategy: PricingStrategy;
 
@@ -8,12 +11,15 @@ export class BookingContext {
     this.strategy = initialStrategy;
   }
 
-  public setStrategy(newStrategy: PricingStrategy): void {
-    this.strategy = newStrategy;
-    console.log(`>>> Strategia aggiornata a: ${this.strategy.getName()}`);
+  setStrategy(strategy: PricingStrategy): void {
+    this.strategy = strategy;
   }
 
-  public executeCalculation(pricePerNight: number, nights: number): number {
+  getStrategyName(): string {
+    return this.strategy.getName();
+  }
+
+  executeCalculation(pricePerNight: number, nights: number): number {
     return this.strategy.calculate(pricePerNight, nights);
   }
 }

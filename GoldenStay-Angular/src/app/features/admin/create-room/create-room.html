@@ -1,46 +1,53 @@
-<div class="factory-container">
+<app-admin-shell heading="Nuova camera" eyebrow="Back office · Fabbrica"
+                 subtitle="Scegli una configurazione predefinita: la camera nasce già pronta e pubblicata.">
 
+  <section class="blueprints">
+    @for (blueprint of blueprints; track blueprint.type) {
+      <article class="blueprint" [class]="'blueprint--' + blueprint.type.toLowerCase()">
+        @if (blueprint.flag) {
+          <span class="blueprint__flag">{{ blueprint.flag }}</span>
+        }
 
-  <div class="header-section">
-    <h1>🏭 Fabbrica Stanze</h1>
-    <p>Seleziona la camera da creare tra queste 3 tipologie:</p>
-  </div>
+        <span class="blueprint__glyph">
+          <app-icon [name]="blueprint.icon" [size]="26" [weight]="1.4" />
+        </span>
 
-  <div class="cards-grid">
+        <h2 class="blueprint__name">{{ blueprint.name }}</h2>
+        <p class="blueprint__tagline">{{ blueprint.tagline }}</p>
 
-    <div class="factory-card standard" (click)="produciStanza('STANDARD')">
-      <div class="icon-box">🛏️</div>
-      <h3>Standard Room</h3>
-      <p class="desc">Essenziale e accogliente.</p>
-      <div class="specs">
-        <span>👥 2 Ospiti</span>
-        <span>💰 80€</span>
-      </div>
-      <button class="btn-produce">Produci Standard</button>
-    </div>
+        <div class="blueprint__specs">
+          <div>
+            <p class="blueprint__spec-label">Tariffa base</p>
+            <p class="blueprint__spec-value">{{ blueprint.price | currency: 'EUR' : 'symbol' : '1.0-0' }}</p>
+          </div>
+          <div>
+            <p class="blueprint__spec-label">Capienza</p>
+            <p class="blueprint__spec-value">{{ blueprint.capacity }} ospiti</p>
+          </div>
+        </div>
 
-    <div class="factory-card deluxe" (click)="produciStanza('DELUXE')">
-      <div class="icon-box">🌅</div>
-      <h3>Deluxe Room</h3>
-      <p class="desc">Spaziosa con vista.</p>
-      <div class="specs">
-        <span>👥 3 Ospiti</span>
-        <span>💰 150€</span>
-      </div>
-      <button class="btn-produce">Produci Deluxe</button>
-    </div>
+        <ul class="blueprint__traits">
+          @for (trait of blueprint.traits; track trait) {
+            <li><app-icon name="check" [size]="14" [weight]="2" /> {{ trait }}</li>
+          }
+        </ul>
 
-    <div class="factory-card suite" (click)="produciStanza('SUITE')">
-      <div class="badge-vip">BEST SELLER</div>
-      <div class="icon-box">💎</div>
-      <h3>Golden Suite</h3>
-      <p class="desc">Lusso sfrenato e Jacuzzi.</p>
-      <div class="specs">
-        <span>👥 4 Ospiti</span>
-        <span>💰 300€</span>
-      </div>
-      <button class="btn-produce">Produci Suite</button>
-    </div>
+        <button class="btn btn--wide blueprint__cta" type="button"
+                [disabled]="building() !== null" (click)="produce(blueprint)">
+          @if (building() === blueprint.type) {
+            Creazione in corso…
+          } @else {
+            Crea {{ blueprint.name }}
+          }
+        </button>
+      </article>
+    }
+  </section>
 
-  </div>
-</div>
+  <p class="blueprints__note">
+    <app-icon name="info" [size]="15" />
+    Le configurazioni arrivano dalle factory del backend: titolo, tariffa, capienza
+    e immagine sono già impostati e restano modificabili dal catalogo.
+  </p>
+
+</app-admin-shell>

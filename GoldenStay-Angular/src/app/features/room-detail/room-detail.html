@@ -1,0 +1,192 @@
+@if (loading()) {
+  <div class="shell loader">
+    <div class="skeleton loader__crumb"></div>
+    <div class="skeleton loader__title"></div>
+    <div class="skeleton loader__frame"></div>
+  </div>
+} @else if (room(); as room) {
+
+  <article class="detail">
+    <header class="lead shell">
+      <a class="crumb" routerLink="/">
+        <app-icon name="arrowLeft" [size]="15" />
+        Tutte le camere
+      </a>
+
+      <div class="lead__row">
+        <div>
+          <p class="eyebrow">Tropea · Vista mare</p>
+          <h1 class="lead__title">{{ room.title }}</h1>
+        </div>
+        <div class="lead__facts">
+          <span class="fact"><app-icon name="guests" [size]="16" /> fino a {{ room.capacity }} ospiti</span>
+          <span class="fact"><app-icon name="bed" [size]="16" /> letto king size</span>
+          <span class="fact"><app-icon name="star" [size]="16" /> 4,9 su 128 recensioni</span>
+        </div>
+      </div>
+    </header>
+
+    <figure class="frame shell imgbox">
+      <img appImageFallback [src]="room.imageUrl" [alt]="room.title">
+      <figcaption class="frame__tag">
+        {{ room.pricePerNight | currency: 'EUR' }} <span>a notte, tasse incluse</span>
+      </figcaption>
+    </figure>
+
+    <div class="shell body">
+
+      <section class="body__main">
+        <h2 class="section-title">La camera</h2>
+        <p class="prose">
+          {{ room.description || 'Una stanza luminosa affacciata sulla scogliera, con arredi su misura, bagno in pietra locale e una finestra che al mattino fa entrare tutto il mare.' }}
+        </p>
+        <p class="prose">
+          Gli spazi sono pensati per {{ room.capacity }}
+          {{ room.capacity === 1 ? 'ospite' : 'ospiti' }}: zona notte separata dal
+          soggiorno, scrivania affacciata sulla terrazza e una poltrona che nessuno
+          finora ha voluto lasciare.
+        </p>
+
+        <div class="rule"></div>
+
+        <h2 class="section-title">Servizi inclusi</h2>
+        <ul class="services">
+          @for (service of services; track service.label) {
+            <li class="services__item">
+              <app-icon [name]="service.icon" [size]="19" />
+              {{ service.label }}
+            </li>
+          }
+        </ul>
+
+        <div class="rule"></div>
+
+        <h2 class="section-title">Buono a sapersi</h2>
+        <dl class="rules">
+          @for (rule of rules; track rule.label) {
+            <div class="rules__row">
+              <dt>{{ rule.label }}</dt>
+              <dd>{{ rule.value }}</dd>
+            </div>
+          }
+        </dl>
+      </section>
+
+      <aside class="body__side">
+        <div class="quote">
+          <div class="quote__head">
+            <p class="quote__from">
+              <strong>{{ room.pricePerNight | currency: 'EUR' }}</strong> a notte
+            </p>
+            <span class="badge badge--brass">Miglior tariffa</span>
+          </div>
+
+          <div class="quote__dates">
+            <label class="quote__cell">
+              <span class="quote__cell-label">Arrivo</span>
+              <input type="date" [min]="today" [ngModel]="checkIn()" name="detailCheckIn"
+                     (ngModelChange)="onCheckInChange($event)">
+            </label>
+            <label class="quote__cell">
+              <span class="quote__cell-label">Partenza</span>
+              <input type="date" [min]="minCheckOut()" [ngModel]="checkOut()" name="detailCheckOut"
+                     (ngModelChange)="checkOut.set($event)">
+            </label>
+          </div>
+
+          <div class="quote__guests">
+            <span class="quote__cell-label">Ospiti</span>
+            <div class="stepper">
+              <button class="stepper__btn" type="button" (click)="stepGuests(-1)"
+                      [disabled]="guests() === 1" aria-label="Un ospite in meno">−</button>
+              <span class="stepper__value">{{ guests() }}</span>
+              <button class="stepper__btn" type="button" (click)="stepGuests(1)"
+                      [disabled]="guests() >= room.capacity" aria-label="Un ospite in più">+</button>
+            </div>
+          </div>
+
+          @if (quote(); as q) {
+            @if (q.nights > 0) {
+              <div class="quote__lines">
+                <div class="quote__line">
+                  <span>
+                    {{ room.pricePerNight | currency: 'EUR' }} ×
+                    {{ q.nights }} {{ q.nights === 1 ? 'notte' : 'notti' }}
+                  </span>
+                  <span>{{ q.standard | currency: 'EUR' }}</span>
+                </div>
+
+                <div class="quote__line">
+                  <span class="quote__tariff">
+                    {{ q.tariff }}
+                  </span>
+                  <span [class.quote__minus]="q.saving > 0" [class.quote__plus]="q.surcharge">
+                    @if (q.saving > 0) {
+                      −{{ q.saving | currency: 'EUR' }}
+                    } @else if (q.surcharge) {
+                      +{{ q.total - q.standard | currency: 'EUR' }}
+                    } @else {
+                      inclusa
+                    }
+                  </span>
+                </div>
+
+                <div class="quote__line quote__line--muted">
+                  <span>{{ checkIn() | date: 'd MMM' }} → {{ checkOut() | date: 'd MMM yyyy' }}</span>
+                  <span>{{ guests() }} {{ guests() === 1 ? 'ospite' : 'ospiti' }}</span>
+                </div>
+              </div>
+
+              <div class="quote__total">
+                <span>Totale soggiorno</span>
+                <strong>{{ q.total | currency: 'EUR' }}</strong>
+              </div>
+            }
+          }
+
+          @if (overCapacity()) {
+            <p class="quote__warn">
+              <app-icon name="alert" [size]="15" />
+              Questa camera ospita al massimo {{ room.capacity }} persone.
+            </p>
+          }
+
+          <button class="btn btn--brass btn--wide quote__cta" type="button"
+                  [disabled]="nights() < 1 || overCapacity()" (click)="book()">
+            {{ auth.isLoggedIn ? 'Prenota ora' : 'Accedi e prenota' }}
+          </button>
+
+          <p class="quote__note">
+            <app-icon name="lock" [size]="13" />
+            @if (!auth.isLoggedIn) { Ti chiederemo di accedere. }
+            Nessun addebito prima della conferma.
+          </p>
+        </div>
+      </aside>
+
+    </div>
+  </article>
+
+  @if (showModal()) {
+    <app-payment-modal
+      [room]="room"
+      [totalPrice]="quote()?.total || 0"
+      [nights]="nights()"
+      [guests]="guests()"
+      [guestName]="auth.currentUser()?.name || 'Ospite'"
+      [email]="auth.currentUser()?.email || ''"
+      [checkIn]="checkIn()"
+      [checkOut]="checkOut()"
+      (close)="showModal.set(false)" />
+  }
+
+} @else {
+  <div class="shell missing">
+    <span class="missing__glyph"><app-icon name="search" [size]="26" /></span>
+    <h1 class="missing__title">Questa camera non esiste più</h1>
+    <p class="missing__text">
+      Potrebbe essere stata ritirata dal catalogo. Diamo un'occhiata a quelle disponibili?
+    </p>
+    <a class="btn btn--brass" routerLink="/">Torna alla collezione</a>
+  </div>
+}

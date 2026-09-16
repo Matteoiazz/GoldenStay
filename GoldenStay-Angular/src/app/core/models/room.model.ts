@@ -4,6 +4,5 @@ export interface Room {
   description: string;
   pricePerNight: number;
   imageUrl: string;
-  isAvailable: boolean;
-  capacity: number; //
+  capacity: number;
 }

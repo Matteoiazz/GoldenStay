@@ -6,6 +6,8 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.Map;
+
 @RestController
 @RequestMapping("/api/users")
 @CrossOrigin(origins = "http://localhost:4200")
@@ -17,25 +19,33 @@ public class UserController {
     // 1. REGISTRAZIONE
     @PostMapping("/register")
     public ResponseEntity<?> register(@RequestBody User user) {
-        // Controlla se l'email esiste già
-        if (userRepository.findByEmail(user.getEmail()).isPresent()) {
-            return ResponseEntity.badRequest().body("Email già registrata!");
+        String email = normalize(user.getEmail());
+
+        if (email.isEmpty() || user.getPassword() == null || user.getPassword().isBlank()) {
+            return ResponseEntity.badRequest().body(Map.of("error", "Email e password sono obbligatorie"));
         }
-        // Salva il nuovo utente
-        User savedUser = userRepository.save(user);
-        return ResponseEntity.ok(savedUser);
+
+        if (userRepository.findByEmail(email).isPresent()) {
+            return ResponseEntity.badRequest().body(Map.of("error", "Email già registrata"));
+        }
+
+        user.setEmail(email);
+        // Il ruolo non arriva mai dal client: ogni nuovo account nasce come ospite.
+        user.setRole(User.ROLE_USER);
+
+        return ResponseEntity.ok(userRepository.save(user));
     }
 
     // 2. LOGIN
     @PostMapping("/login")
-    public ResponseEntity<?> login(@RequestBody User loginData) {
-        // Cerca l'utente con email e password
-        User user = userRepository.findByEmailAndPassword(loginData.getEmail(), loginData.getPassword()).orElse(null);
+    public ResponseEntity<?> login(@RequestBody User credentials) {
+        return userRepository
+                .findByEmailAndPassword(normalize(credentials.getEmail()), credentials.getPassword())
+                .<ResponseEntity<?>>map(ResponseEntity::ok)
+                .orElseGet(() -> ResponseEntity.status(401).body(Map.of("error", "Credenziali errate")));
+    }
 
-        if (user != null) {
-            return ResponseEntity.ok(user);
-        } else {
-            return ResponseEntity.status(401).body("Credenziali errate"); // Errore
-        }
+    private String normalize(String email) {
+        return email == null ? "" : email.trim().toLowerCase();
     }
 }

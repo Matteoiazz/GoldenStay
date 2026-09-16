@@ -1,59 +1,111 @@
-import { Component, inject } from '@angular/core';
-import { CommonModule } from '@angular/common';
-import { RouterModule } from '@angular/router';
+import { Component, computed, inject, signal } from '@angular/core';
+import { CurrencyPipe } from '@angular/common';
 import { FormsModule } from '@angular/forms';
+import { RouterLink } from '@angular/router';
+
 import { RoomService } from '../../../core/services/room.service';
 import { Room } from '../../../core/models/room.model';
+import { NotifyService } from '../../../shared/notify/notify';
+import { Icon } from '../../../shared/icon/icon';
+import { ImageFallback } from '../../../shared/image-fallback/image-fallback';
+import { AdminShell } from '../admin-shell/admin-shell';
 
 @Component({
   selector: 'app-admin-dashboard',
   standalone: true,
-  imports: [CommonModule, RouterModule, FormsModule], // <--- AGGIUNGI FormsModule QUI
+  imports: [CurrencyPipe, FormsModule, RouterLink, Icon, ImageFallback, AdminShell],
   templateUrl: './admin-dashboard.html',
-  styleUrls: ['./admin-dashboard.css']
+  styleUrls: ['../admin.css', './admin-dashboard.css'],
 })
 export class AdminDashboard {
+  protected rooms = inject(RoomService);
+  private notify = inject(NotifyService);
 
-  roomService = inject(RoomService);
+  protected draft = signal<Room | null>(null);
+  protected saving = signal(false);
+  protected query = signal('');
 
-  // Variabile per gestire la modale: se è null la modale è chiusa
-  editingRoom: any = null;
+  protected visible = computed(() => {
+    const needle = this.query().trim().toLowerCase();
+    const list = this.rooms.rooms();
+    if (!needle) return list;
+    return list.filter(room =>
+      `${room.title} ${room.description}`.toLowerCase().includes(needle),
+    );
+  });
 
-  eliminaStanza(id: number) {
-    if(!confirm('🗑️ Sei sicuro di voler eliminare questa stanza?')) return;
+  protected stats = computed(() => {
+    const list = this.rooms.rooms();
+    if (!list.length) return { count: 0, average: 0, beds: 0, top: 0 };
 
-    this.roomService.deleteRoom(id).subscribe({
-      next: () => alert('✅ Eliminata!'),
-      error: (e) => console.error(e)
-    });
+    const total = list.reduce((sum, room) => sum + room.pricePerNight, 0);
+    return {
+      count: list.length,
+      average: total / list.length,
+      beds: list.reduce((sum, room) => sum + room.capacity, 0),
+      top: Math.max(...list.map(room => room.pricePerNight)),
+    };
+  });
+
+  protected openEditor(room: Room) {
+    // Copia di lavoro: la tabella sottostante non deve cambiare mentre si digita.
+    this.draft.set({ ...room });
   }
 
-  // 1. APRE LA MODALE
-  apriModifica(room: any) {
-    // Creiamo una COPIA della stanza (con {...room})
-    // Se non facessimo la copia, modificando l'input cambierebbe anche la card sotto in tempo reale!
-    this.editingRoom = { ...room };
+  protected closeEditor() {
+    this.draft.set(null);
   }
 
-  // 2. CHIUDE LA MODALE (Annulla)
-  chiudiModale() {
-    this.editingRoom = null;
+  protected patchDraft<K extends keyof Room>(key: K, value: Room[K]) {
+    const current = this.draft();
+    if (current) this.draft.set({ ...current, [key]: value });
   }
 
-  // 3. SALVA LE MODIFICHE
-  salvaModifiche() {
-    if (!this.editingRoom) return;
+  protected save() {
+    const room = this.draft();
+    if (!room) return;
 
-    this.roomService.updateRoom(this.editingRoom.id, this.editingRoom).subscribe({
+    if (!room.title?.trim()) {
+      this.notify.error('Titolo mancante', 'Ogni camera deve avere un nome riconoscibile.');
+      return;
+    }
+
+    this.saving.set(true);
+    this.rooms.updateRoom(room.id, room).subscribe({
       next: () => {
-        alert('✅ Modifica salvata!');
-        this.chiudiModale(); // Chiude la finestra
-        // La lista si aggiorna da sola grazie al "tap" nel service
+        this.saving.set(false);
+        this.closeEditor();
+        this.notify.success('Camera aggiornata', room.title);
       },
-      error: (err) => {
-        console.error(err);
-        alert('❌ Errore nel salvataggio.');
-      }
+      error: () => {
+        this.saving.set(false);
+        this.notify.error('Salvataggio non riuscito', 'Il servizio non ha risposto.');
+      },
     });
+  }
+
+  protected async remove(room: Room) {
+    const confirmed = await this.notify.ask({
+      title: 'Eliminare questa camera?',
+      detail: `"${room.title}" sparirà dal catalogo pubblico. L'operazione non è reversibile.`,
+      confirmLabel: 'Elimina',
+      danger: true,
+    });
+
+    if (!confirmed) return;
+
+    this.rooms.deleteRoom(room.id).subscribe({
+      next: () => this.notify.success('Camera eliminata', room.title),
+      error: () =>
+        this.notify.error(
+          'Eliminazione non riuscita',
+          'Potrebbero esserci prenotazioni collegate a questa camera.',
+        ),
+    });
+  }
+
+  protected refresh() {
+    this.rooms.loadRooms();
+    this.notify.info('Catalogo aggiornato');
   }
 }

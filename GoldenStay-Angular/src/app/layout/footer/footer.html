@@ -1,1 +1,60 @@
-<p>footer works!</p>
+<footer class="foot" id="indirizzo">
+  <div class="shell">
+
+    <div class="foot__top">
+      <div class="foot__brand">
+        <a class="mark" routerLink="/">
+          <span class="mark__gem" aria-hidden="true"></span>
+          <span class="mark__word">Golden<em>Stay</em></span>
+        </a>
+        <p class="foot__claim">
+          Una collezione ristretta di camere e suite affacciate sul mare.
+          Poche chiavi, molta cura.
+        </p>
+        <div class="socials">
+          <a class="socials__link" href="#" aria-label="Instagram"><app-icon name="instagram" [size]="18" /></a>
+          <a class="socials__link" href="#" aria-label="Facebook"><app-icon name="facebook" [size]="18" /></a>
+          <a class="socials__link" href="#" aria-label="LinkedIn"><app-icon name="linkedin" [size]="18" /></a>
+        </div>
+      </div>
+
+      <nav class="foot__col">
+        <h3 class="foot__head">Soggiorno</h3>
+        <a class="foot__link" routerLink="/">Le camere</a>
+        <a class="foot__link" href="#esperienza">L'esperienza</a>
+        <a class="foot__link" href="#tariffe">Tariffe e sconti</a>
+        <a class="foot__link" href="#">Cancellazione</a>
+      </nav>
+
+      <nav class="foot__col">
+        <h3 class="foot__head">Ospiti</h3>
+        <a class="foot__link" routerLink="/login">Accedi</a>
+        <a class="foot__link" routerLink="/register">Crea un account</a>
+        <a class="foot__link" href="#">Domande frequenti</a>
+        <a class="foot__link" href="#">Assistenza</a>
+      </nav>
+
+      <div class="foot__col">
+        <h3 class="foot__head">Ricevimento</h3>
+        <p class="foot__line">
+          <app-icon name="pin" [size]="16" />
+          Lungomare Cristoforo Colombo 12<br>Tropea (VV)
+        </p>
+        <p class="foot__line"><app-icon name="clock" [size]="16" /> Aperto 24 ore su 24</p>
+        <p class="foot__line"><app-icon name="mail" [size]="16" /> concierge&#64;goldenstay.it</p>
+      </div>
+    </div>
+
+    <div class="foot__bottom">
+      <p>© {{ year }} GoldenStay — Tutti i diritti riservati.</p>
+      <div class="foot__legal">
+        <a href="#">Privacy</a>
+        <span aria-hidden="true">·</span>
+        <a href="#">Cookie</a>
+        <span aria-hidden="true">·</span>
+        <a href="#">Termini</a>
+      </div>
+    </div>
+
+  </div>
+</footer>

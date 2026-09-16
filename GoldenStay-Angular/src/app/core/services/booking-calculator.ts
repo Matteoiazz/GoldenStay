@@ -1,75 +1,87 @@
 import { Injectable } from '@angular/core';
-import { PricingStrategy, StandardPricingStrategy, LongStayDiscountStrategy, WeekendStrategy } from '../strategies/price.strategy';
 
-@Injectable({
-  providedIn: 'root'
-})
+import {
+  AugustPricingStrategy,
+  LongStayDiscountStrategy,
+  PricingStrategy,
+  StandardPricingStrategy,
+  WeekendStrategy,
+} from '../strategies/price.strategy';
+import { countNights } from './room.service';
+
+export interface Quote {
+  nights: number;
+  /** Totale con la tariffa più conveniente applicabile. */
+  total: number;
+  /** Totale a tariffa piena, usato per il prezzo barrato. */
+  standard: number;
+  tariff: string;
+  /** Differenza positiva solo quando la tariffa applicata sconta. */
+  saving: number;
+  surcharge: boolean;
+}
+
+@Injectable({ providedIn: 'root' })
 export class BookingCalculator {
-
-
-  public calculateTotal(strategy: PricingStrategy, pricePerNight: number, checkIn: string, checkOut: string): number {
-    const nights = this.getNights(checkIn, checkOut);
-    if (nights <= 0) return 0;
-    return strategy.calculate(pricePerNight, nights);
+  calculateTotal(strategy: PricingStrategy, pricePerNight: number, checkIn: string, checkOut: string): number {
+    const nights = countNights(checkIn, checkOut);
+    return nights > 0 ? strategy.calculate(pricePerNight, nights) : 0;
   }
 
-  // --- LOGICA DI SCELTA (FACTORY) ---
+  /**
+   * Preventivo completo: notti, totale applicato, totale a listino e nome
+   * della tariffa. È l'unico punto in cui si decide quanto costa un soggiorno.
+   */
+  quote(pricePerNight: number, checkIn: string, checkOut: string): Quote {
+    const nights = countNights(checkIn, checkOut);
+    if (nights === 0) {
+      return { nights: 0, total: 0, standard: 0, tariff: '', saving: 0, surcharge: false };
+    }
+
+    const strategy = this.getBestStrategy(checkIn, checkOut);
+    const total = strategy.calculate(pricePerNight, nights);
+    const standard = new StandardPricingStrategy().calculate(pricePerNight, nights);
+
+    return {
+      nights,
+      total,
+      standard,
+      tariff: strategy.getName(),
+      saving: Math.max(0, standard - total),
+      surcharge: total > standard,
+    };
+  }
 
   /**
-   * Strategia migliore.
-   * Ordine di priorità:
-   * 1. Sconto Lungo Soggiorno (vince su tutto)
-   * 2. Maggiorazione Weekend (solo se non è lungo soggiorno)
-   * 3. Standard
+   * Priorità: alta stagione di agosto, poi lo sconto lungo soggiorno,
+   * poi la maggiorazione weekend, infine il listino.
    */
-  public getBestStrategy(checkIn: string, checkOut: string): PricingStrategy {
+  getBestStrategy(checkIn: string, checkOut: string): PricingStrategy {
     const start = new Date(checkIn);
     const end = new Date(checkOut);
-    const nights = this.getNights(checkIn, checkOut);
 
-    // 1. Verifichiamo se si può applicare lo sconto
-    if (nights > 7) {
+    if (start.getMonth() === 7 || end.getMonth() === 7) {
+      return new AugustPricingStrategy();
+    }
+
+    if (countNights(checkIn, checkOut) > 7) {
       return new LongStayDiscountStrategy();
     }
 
-    // 2. Se è un soggiorno breve, controlliamo se cade nel weekend
     if (this.hasWeekend(start, end)) {
       return new WeekendStrategy();
     }
 
-    // 3. Altrimenti tariffa normale
     return new StandardPricingStrategy();
   }
 
-  // --- HELPER PRIVATI ---
-
-  private getNights(inDate: string, outDate: string): number {
-    if (!inDate || !outDate) return 0;
-    const start = new Date(inDate);
-    const end = new Date(outDate);
-    const diff = end.getTime() - start.getTime();
-
-    // Math.ceil assicura che se esci tardi conta come notte (opzionale)
-    const nights = Math.ceil(diff / (1000 * 3600 * 24));
-    return nights > 0 ? nights : 0;
-  }
-
-  /**
-   * Scansiona i giorni reali per vedere se includono venerdì notte o sabato notte.
-   */
+  /** Vero se il soggiorno comprende la notte del venerdì o del sabato. */
   private hasWeekend(start: Date, end: Date): boolean {
-    // Cloniamo la data per non modificare l'oggetto originale durante il loop
-    let current = new Date(start);
-    const endDate = new Date(end);
-
-    while (current < endDate) {
-      const day = current.getDay();
-      // 5 = Venerdì (notte su sabato), 6 = Sabato (notte su domenica)
-      if (day === 5 || day === 6) {
-        return true;
-      }
-      // Avanza di 1 giorno
-      current.setDate(current.getDate() + 1);
+    const cursor = new Date(start);
+    while (cursor < end) {
+      const day = cursor.getDay();
+      if (day === 5 || day === 6) return true;
+      cursor.setDate(cursor.getDate() + 1);
     }
     return false;
   }

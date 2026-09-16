@@ -1,23 +1,24 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
+import { provideRouter } from '@angular/router';
+import { provideHttpClient } from '@angular/common/http';
+import { provideHttpClientTesting } from '@angular/common/http/testing';
 
-import { HeroSearch } from './hero-search';
+import { HeroSearchComponent } from './hero-search';
 
-describe('HeroSearch', () => {
-  let component: HeroSearch;
-  let fixture: ComponentFixture<HeroSearch>;
+describe('HeroSearchComponent', () => {
+  let fixture: ComponentFixture<HeroSearchComponent>;
 
   beforeEach(async () => {
     await TestBed.configureTestingModule({
-      imports: [HeroSearch]
-    })
-    .compileComponents();
+      imports: [HeroSearchComponent],
+      providers: [provideRouter([]), provideHttpClient(), provideHttpClientTesting()],
+    }).compileComponents();
 
-    fixture = TestBed.createComponent(HeroSearch);
-    component = fixture.componentInstance;
+    fixture = TestBed.createComponent(HeroSearchComponent);
     fixture.detectChanges();
   });
 
-  it('should create', () => {
-    expect(component).toBeTruthy();
+  it('viene creato', () => {
+    expect(fixture.componentInstance).toBeTruthy();
   });
 });

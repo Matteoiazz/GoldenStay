@@ -12,11 +12,22 @@ import java.util.List;
 @Repository
 public interface RoomRepository extends JpaRepository<Room, Long> {
 
-
-    @Query("SELECT r FROM Room r WHERE r.id NOT IN (" +
-            "  SELECT b.room.id FROM Booking b " +
-            "  WHERE b.checkIn < :checkOut AND b.checkOut > :checkIn" +
-            ")")
+    /**
+     * Camere libere nell'intervallo richiesto. Le prenotazioni annullate non
+     * occupano la camera, e il giorno di partenza è già riassegnabile.
+     */
+    @Query("""
+            SELECT r FROM Room r
+            WHERE r.id NOT IN (
+                SELECT b.room.id FROM Booking b
+                WHERE b.status <> 'CANCELLATA'
+                  AND b.checkIn < :checkOut
+                  AND b.checkOut > :checkIn
+            )
+            ORDER BY r.pricePerNight DESC
+            """)
     List<Room> findAvailableRooms(@Param("checkIn") LocalDate checkIn,
                                   @Param("checkOut") LocalDate checkOut);
+
+    List<Room> findAllByOrderByPricePerNightDesc();
 }

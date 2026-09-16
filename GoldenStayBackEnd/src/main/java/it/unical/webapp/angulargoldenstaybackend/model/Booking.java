@@ -7,6 +7,9 @@ import java.time.LocalDate;
 @Table(name = "bookings")
 public class Booking {
 
+    public static final String CONFERMATA = "CONFERMATA";
+    public static final String CANCELLATA = "CANCELLATA";
+
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
@@ -16,9 +19,8 @@ public class Booking {
 
     private double totalPrice;
 
-    // Esempio valori: "CONFERMATA", "CANCELLATA", "IN ATTESA"
+    @Column(nullable = false)
     private String status;
-
 
     // Molte prenotazioni appartengono a un Utente
     @ManyToOne
@@ -30,10 +32,10 @@ public class Booking {
     @JoinColumn(name = "room_id", nullable = false)
     private Room room;
 
-    // Costruttore vuoto
-    public Booking() {}
+    public Booking() {
+        this.status = CONFERMATA;
+    }
 
-    // Costruttore pieno
     public Booking(LocalDate checkIn, LocalDate checkOut, double totalPrice, String status, User user, Room room) {
         this.checkIn = checkIn;
         this.checkOut = checkOut;

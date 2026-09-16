@@ -1,1 +1,79 @@
-<p>hero-search works!</p>
+<section class="hero">
+  <div class="hero__frame" aria-hidden="true"></div>
+  <div class="hero__scrim" aria-hidden="true"></div>
+
+  <div class="hero__body shell">
+    <p class="hero__kicker">Tropea · Costa degli Dei</p>
+
+    <h1 class="hero__title">
+      Dormire davanti<br>al mare, <em>davvero</em>
+    </h1>
+
+    <p class="hero__lede">
+      Undici camere affacciate sulla scogliera, colazione servita in terrazza
+      e un concierge che risponde ancora al primo squillo.
+    </p>
+
+    <form class="finder" (ngSubmit)="submit()">
+      <div class="finder__field">
+        <span class="finder__glyph"><app-icon name="calendar" [size]="18" /></span>
+        <div class="finder__control">
+          <label class="finder__label" for="checkIn">Arrivo</label>
+          <input id="checkIn" class="finder__input" type="date" [min]="today"
+                 [ngModel]="checkIn()" name="checkIn"
+                 (ngModelChange)="onCheckInChange($event)">
+        </div>
+      </div>
+
+      <span class="finder__split" aria-hidden="true"></span>
+
+      <div class="finder__field">
+        <span class="finder__glyph"><app-icon name="calendar" [size]="18" /></span>
+        <div class="finder__control">
+          <label class="finder__label" for="checkOut">Partenza</label>
+          <input id="checkOut" class="finder__input" type="date" [min]="minCheckOut()"
+                 [ngModel]="checkOut()" name="checkOut"
+                 (ngModelChange)="onCheckOutChange($event)">
+        </div>
+      </div>
+
+      <span class="finder__split" aria-hidden="true"></span>
+
+      <div class="finder__field finder__field--guests">
+        <span class="finder__glyph"><app-icon name="guests" [size]="18" /></span>
+        <div class="finder__control">
+          <span class="finder__label">Ospiti</span>
+          <div class="stepper">
+            <button class="stepper__btn" type="button" (click)="stepGuests(-1)"
+                    [disabled]="guests() === 1" aria-label="Un ospite in meno">−</button>
+            <span class="stepper__value">{{ guests() }}</span>
+            <button class="stepper__btn" type="button" (click)="stepGuests(1)"
+                    [disabled]="guests() === maxGuests" aria-label="Un ospite in più">+</button>
+          </div>
+        </div>
+      </div>
+
+      <button class="finder__go" type="submit" [disabled]="rooms.loading()"
+              [attr.aria-label]="'Cerca disponibilità'">
+        @if (rooms.loading()) {
+          <span class="finder__spin" aria-hidden="true"></span>
+        } @else {
+          <app-icon name="search" [size]="20" [weight]="1.8" />
+        }
+        <span class="finder__go-text">Cerca</span>
+      </button>
+    </form>
+
+    <p class="hero__nights">
+      @if (nights() > 0) {
+        {{ nights() }} {{ nights() === 1 ? 'notte' : 'notti' }} ·
+      }
+      Cancellazione gratuita · Miglior tariffa garantita · Conferma immediata
+    </p>
+  </div>
+
+  <a class="hero__cue" href="#camere" aria-label="Vai alle camere">
+    <span class="hero__cue-line" aria-hidden="true"></span>
+    Scorri
+  </a>
+</section>

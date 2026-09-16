@@ -1,10 +1,14 @@
 package it.unical.webapp.angulargoldenstaybackend.model;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
 import jakarta.persistence.*;
 
 @Entity
 @Table(name = "users")
 public class User {
+
+    public static final String ROLE_USER = "USER";
+    public static final String ROLE_ADMIN = "ADMIN";
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -12,23 +16,27 @@ public class User {
 
     private String name;
 
-    @Column(unique = true)
+    @Column(unique = true, nullable = false)
     private String email;
 
+    // Si accetta in ingresso ma non viene mai serializzata nelle risposte.
+    @JsonProperty(access = JsonProperty.Access.WRITE_ONLY)
+    @Column(nullable = false)
     private String password;
 
+    @Column(nullable = false)
     private String role;
 
-    public User() {}
+    public User() {
+        this.role = ROLE_USER;
+    }
 
     public User(String name, String email, String password) {
         this.name = name;
         this.email = email;
         this.password = password;
-        this.role = "USER";
+        this.role = ROLE_USER;
     }
-
-
 
     // GETTERS & SETTERS
     public Long getId() { return id; }
@@ -39,6 +47,6 @@ public class User {
     public void setEmail(String email) { this.email = email; }
     public String getPassword() { return password; }
     public void setPassword(String password) { this.password = password; }
-    public String getRole() {return role;}
-    public void setRole(String role) {this.role = role;}
+    public String getRole() { return role; }
+    public void setRole(String role) { this.role = role; }
 }

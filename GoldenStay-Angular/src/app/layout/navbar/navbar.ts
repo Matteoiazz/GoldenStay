@@ -1,106 +1,88 @@
-import { Component, inject } from '@angular/core';
-import { CommonModule } from '@angular/common';
-import { RouterLink, Router, NavigationEnd } from '@angular/router';
+import { Component, HostListener, computed, inject, signal } from '@angular/core';
+import { NavigationEnd, Router, RouterLink, RouterLinkActive } from '@angular/router';
+import { filter } from 'rxjs/operators';
+
 import { AuthService } from '../../core/services/auth';
+import { NotifyService } from '../../shared/notify/notify';
+import { Icon } from '../../shared/icon/icon';
 
 @Component({
   selector: 'app-navbar',
   standalone: true,
-  imports: [CommonModule, RouterLink],
-  template: `
-    <header class="navbar">
-      <div class="logo" routerLink="/">
-        <span class="golden">Golden</span>Stay
-      </div>
-
-      <nav>
-        <ul>
-
-          @if (isClientPage) {
-            <li><a routerLink="/">Home</a></li>
-          }
-
-          @if (authService.currentUser()) {
-
-            <li class="user-welcome">
-              Ciao, {{ authService.currentUser()?.name }}!
-            </li>
-
-            <li>
-              <button class="btn-logout" (click)="authService.logout()">Esci</button>
-            </li>
-
-          }
-
-          @else {
-
-            <li><a routerLink="/login">Accedi</a></li>
-            <li><a routerLink="/register" class="btn-register">Registrati</a></li>
-
-          }
-        </ul>
-      </nav>
-    </header>
-  `,
-  styles: [`
-    .navbar {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      padding: 1rem 2rem;
-      background-color: #2c3e50;
-      color: white;
-      box-shadow: 0 2px 5px rgba(0,0,0,0.1);
-      position: sticky;
-      top: 0;
-      z-index: 1000;
-    }
-    .logo { font-size: 1.5rem; font-weight: bold; cursor: pointer; }
-    .golden { color: #d4af37; }
-    ul { list-style: none; display: flex; align-items: center; gap: 20px; margin: 0; padding: 0; }
-
-    a { text-decoration: none; color: white; transition: color 0.3s; font-size: 0.95rem; }
-    a:hover { color: #d4af37; }
-
-    .user-welcome { color: #d4af37; font-weight: bold; border-right: 1px solid #555; padding-right: 20px; }
-
-    .btn-register {
-      border: 1px solid #d4af37;
-      padding: 8px 18px;
-      border-radius: 20px;
-      color: #d4af37 !important;
-      transition: 0.3s;
-    }
-    .btn-register:hover {
-      background: #d4af37;
-      color: white !important;
-    }
-
-    .btn-logout {
-      background: none;
-      border: none;
-      color: #bbb;
-      cursor: pointer;
-      font-size: 0.95rem;
-      text-decoration: underline;
-    }
-    .btn-logout:hover { color: #e74c3c; }
-  `]
+  imports: [RouterLink, RouterLinkActive, Icon],
+  templateUrl: './navbar.html',
+  styleUrls: ['./navbar.css'],
 })
 export class Navbar {
-  public authService = inject(AuthService);
+  protected auth = inject(AuthService);
   private router = inject(Router);
+  private notify = inject(NotifyService);
 
-  // Variabile che decide se mostrare il tasto Home
-  isClientPage: boolean = true;
+  /** Sulla home l'header galleggia sopra l'immagine finché non si scorre. */
+  protected onHome = signal(true);
+  protected scrolled = signal(false);
+  protected menuOpen = signal(false);
+  protected drawerOpen = signal(false);
+
+  protected transparent = computed(() => this.onHome() && !this.scrolled() && !this.drawerOpen());
+
+  protected initials = computed(() => {
+    const name = this.auth.currentUser()?.name?.trim();
+    if (!name) return 'GS';
+    return name
+      .split(/\s+/)
+      .slice(0, 2)
+      .map(part => part.charAt(0).toUpperCase())
+      .join('');
+  });
+
+  protected isAdmin = computed(() => this.auth.currentUser()?.role?.toUpperCase() === 'ADMIN');
 
   constructor() {
-    // Ci mettiamo in ascolto dei cambi di pagina
-    this.router.events.subscribe((event) => {
-      if (event instanceof NavigationEnd) {
-        // Se l'URL contiene '/admin', allora NON siamo nella pagina cliente
-        this.isClientPage = !event.url.includes('/admin');
-      }
-    });
+    this.router.events
+      .pipe(filter((e): e is NavigationEnd => e instanceof NavigationEnd))
+      .subscribe(event => {
+        this.onHome.set(event.urlAfterRedirects === '/');
+        this.closeAll();
+      });
+  }
+
+  @HostListener('window:scroll')
+  onScroll() {
+    this.scrolled.set(window.scrollY > 24);
+  }
+
+  @HostListener('document:click', ['$event'])
+  onDocumentClick(event: MouseEvent) {
+    const target = event.target as HTMLElement;
+    if (this.menuOpen() && !target.closest('.account')) this.menuOpen.set(false);
+  }
+
+  @HostListener('document:keydown.escape')
+  onEscape() {
+    this.closeAll();
+  }
+
+  protected toggleMenu() {
+    this.menuOpen.update(open => !open);
+  }
+
+  protected toggleDrawer() {
+    const next = !this.drawerOpen();
+    this.drawerOpen.set(next);
+    document.body.classList.toggle('is-locked', next);
+  }
+
+  protected closeAll() {
+    this.menuOpen.set(false);
+    this.drawerOpen.set(false);
+    document.body.classList.remove('is-locked');
+  }
+
+  protected logout() {
+    const name = this.auth.currentUser()?.name;
+    this.closeAll();
+    this.auth.logout();
+    this.notify.info('Sessione chiusa', name ? `A presto, ${name}.` : undefined);
   }
 }

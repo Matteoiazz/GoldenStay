@@ -1,62 +1,143 @@
-<div class="container">
+<app-admin-shell heading="Prenotazioni"
+                 subtitle="Registro completo dei soggiorni confermati e annullati.">
 
-  <button class="btn-back" (click)="tornaIndietro()">
-    ⬅ Torna alla Dashboard
-  </button>
+  <div slot="actions">
+    <button class="btn btn--ghost btn--sm" type="button" (click)="refresh()">
+      <app-icon class="btn__icon" name="refresh" [size]="15" />
+      Aggiorna
+    </button>
+    <button class="btn btn--danger btn--sm" type="button"
+            [disabled]="bookings.bookings().length === 0" (click)="purge()">
+      <app-icon class="btn__icon" name="trash" [size]="15" />
+      Svuota registro
+    </button>
+  </div>
 
-  <h1>📅 Gestione Prenotazioni</h1>
+  <section class="tiles">
+    <article class="tile">
+      <p class="tile__label">Prenotazioni attive</p>
+      <p class="tile__value">{{ bookings.active().length }}</p>
+      <p class="tile__note">{{ bookings.bookings().length }} righe a registro</p>
+    </article>
+    <article class="tile">
+      <p class="tile__label">Ricavi confermati</p>
+      <p class="tile__value">{{ bookings.revenue() | currency: 'EUR' : 'symbol' : '1.0-0' }}</p>
+      <p class="tile__note">al netto delle prenotazioni annullate</p>
+    </article>
+    <article class="tile">
+      <p class="tile__label">Notti vendute</p>
+      <p class="tile__value">{{ bookings.nightsSold() }}</p>
+      <p class="tile__note">somma dei soggiorni attivi</p>
+    </article>
+    <article class="tile">
+      <p class="tile__label">Annullate</p>
+      <p class="tile__value">{{ bookings.bookings().length - bookings.active().length }}</p>
+      <p class="tile__note">conservate nello storico</p>
+    </article>
+  </section>
 
-  <table>
-    <thead>
-    <tr>
-      <th>ID</th>
-      <th>Cliente</th>
-      <th>Stanza</th>
-      <th>Check-In</th>
-      <th>Check-Out</th>
-      <th>Totale</th> <th>Stato</th>
-      <th>Azioni</th>
-    </tr>
-    </thead>
-    <tbody>
+  <div class="board">
+    <div class="board__head">
+      <div class="chips">
+        @for (option of filters; track option.key) {
+          <button class="chip" type="button" [class.is-on]="filter() === option.key"
+                  (click)="filter.set(option.key)">
+            {{ option.label }}
+          </button>
+        }
+      </div>
 
-      @for (booking of bookingService.bookings(); track booking.id) {
-        <tr>
-          <td>#{{ booking.id }}</td>
+      <label class="finder">
+        <app-icon name="search" [size]="16" />
+        <input type="search" placeholder="Cerca ospite, camera o numero"
+               [value]="query()" (input)="query.set($any($event.target).value)">
+      </label>
+    </div>
 
-          <td>{{ booking.user?.name || 'Utente Sconosciuto' }}</td>
+    @if (bookings.loading()) {
+      <div class="board__empty">
+        <span class="board__spin"></span>
+        Lettura del registro…
+      </div>
+    } @else if (bookings.failed()) {
+      <div class="board__empty">
+        <app-icon name="alert" [size]="26" />
+        Il servizio prenotazioni non risponde. Verifica che il backend sia attivo.
+      </div>
+    } @else if (visible().length === 0) {
+      <div class="board__empty">
+        <app-icon name="receipt" [size]="26" />
+        @if (query() || filter() !== 'tutte') {
+          Nessuna prenotazione corrisponde ai filtri selezionati.
+        } @else {
+          Nessuna prenotazione registrata: le nuove appariranno qui in tempo reale.
+        }
+      </div>
+    } @else {
+      <div class="board__scroll">
+        <table class="grid-table">
+          <thead>
+            <tr>
+              <th>Rif.</th>
+              <th>Ospite</th>
+              <th>Camera</th>
+              <th>Soggiorno</th>
+              <th>Totale</th>
+              <th>Stato</th>
+              <th class="grid-table__right">Azioni</th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (booking of visible(); track booking.id) {
+              <tr [class.is-void]="booking.status === 'CANCELLATA'">
+                <td class="cell-ref">#{{ booking.id }}</td>
 
-          <td>{{ booking.room?.title || 'Stanza Rimossa' }}</td>
+                <td>
+                  <div class="cell-guest">
+                    <strong>{{ booking.user?.name || 'Ospite rimosso' }}</strong>
+                    <small>{{ booking.user?.email || '—' }}</small>
+                  </div>
+                </td>
 
-          <td>{{ booking.checkIn | date:'dd/MM/yyyy' }}</td>
-          <td>{{ booking.checkOut | date:'dd/MM/yyyy' }}</td>
+                <td>{{ booking.room?.title || 'Camera rimossa' }}</td>
 
-          <td>{{ booking.totalPrice | currency:'EUR' }}</td>
+                <td>
+                  <div class="cell-stay">
+                    <strong>
+                      {{ booking.checkIn | date: 'd MMM' }} → {{ booking.checkOut | date: 'd MMM yyyy' }}
+                    </strong>
+                    <small>
+                      {{ nightsOf(booking) }} {{ nightsOf(booking) === 1 ? 'notte' : 'notti' }}
+                    </small>
+                  </div>
+                </td>
 
-          <td>
-            <span class="badge"
-                  [class.confermata]="booking.status === 'CONFERMATA'"
-                  [class.cancellata]="booking.status === 'CANCELLATA'">
-              {{ booking.status }}
-            </span>
-          </td>
+                <td class="cell-total">{{ booking.totalPrice | currency: 'EUR' }}</td>
 
-          <td>
-            @if (booking.status !== 'CANCELLATA') {
-              <button class="btn-cancel" (click)="annullaPrenotazione(booking.id)">
-                ❌ Annulla
-              </button>
+                <td>
+                  <span class="badge"
+                        [class.badge--pine]="booking.status !== 'CANCELLATA'"
+                        [class.badge--rust]="booking.status === 'CANCELLATA'">
+                    <span class="badge__dot"></span>
+                    {{ booking.status === 'CANCELLATA' ? 'Annullata' : 'Confermata' }}
+                  </span>
+                </td>
+
+                <td class="grid-table__right">
+                  @if (booking.status !== 'CANCELLATA') {
+                    <button class="btn btn--danger btn--sm" type="button" (click)="cancel(booking)">
+                      Annulla
+                    </button>
+                  } @else {
+                    <span class="cell-muted">—</span>
+                  }
+                </td>
+              </tr>
             }
-          </td>
-        </tr>
-      } @empty {
-        <tr>
-          <td colspan="8" style="text-align: center; padding: 30px;">
-            Nessuna prenotazione trovata nel sistema.
-          </td>
-        </tr>
-      }
+          </tbody>
+        </table>
+      </div>
+    }
+  </div>
 
-    </tbody>
-  </table>
-</div>
+</app-admin-shell>

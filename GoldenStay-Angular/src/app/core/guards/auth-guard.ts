@@ -1,16 +1,20 @@
 import { inject } from '@angular/core';
 import { CanActivateFn, Router } from '@angular/router';
-import { AuthService } from '../services/auth'; // <--- Controlla che questo percorso sia giusto!
 
-export const authGuard: CanActivateFn = (route, state) => {
-  const authService = inject(AuthService);
+import { AuthService } from '../services/auth';
+
+/** Protegge le rotte di back office: serve una sessione con ruolo ADMIN. */
+export const authGuard: CanActivateFn = (_route, state) => {
+  const auth = inject(AuthService);
   const router = inject(Router);
 
-  // Se l'utente è loggato (cioè isLoggedIn è true), apri la porta
-  if (authService.isLoggedIn) {
-    return true;
+  if (auth.isAdmin()) return true;
+
+  if (auth.isLoggedIn) {
+    // Utente autenticato ma senza permessi: lo riportiamo al sito pubblico.
+    return router.createUrlTree(['/']);
   }
 
-  // Altrimenti, LOGIN
+  auth.redirectUrl = state.url;
   return router.createUrlTree(['/login']);
 };

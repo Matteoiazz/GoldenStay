@@ -1,1 +1,107 @@
-<p>register works!</p>
+<div class="auth">
+
+  <aside class="auth__art auth__art--register">
+    <div class="auth__art-scrim"></div>
+    <div class="auth__art-body">
+      <p class="eyebrow">Undici chiavi soltanto</p>
+      <blockquote class="auth__quote">
+        Chi entra da ospite esce conoscendo il nome di tutti in cucina.
+      </blockquote>
+      <p class="auth__cite">Il ricevimento di GoldenStay</p>
+    </div>
+  </aside>
+
+  <section class="auth__panel">
+    <div class="auth__form">
+      <p class="eyebrow">Nuovo account</p>
+      <h1 class="auth__title">Registrati</h1>
+      <p class="auth__lede">
+        Bastano trenta secondi: ti servirà solo per confermare le prenotazioni
+        e ritrovarle quando vuoi.
+      </p>
+
+      @if (error()) {
+        <p class="auth__alert">
+          <app-icon name="alert" [size]="16" />
+          {{ error() }}
+        </p>
+      }
+
+      <form (ngSubmit)="submit()" novalidate>
+        <label class="field">
+          <span class="field__label">Nome e cognome</span>
+          <input class="field__input" type="text" name="name" autocomplete="name"
+                 placeholder="Mario Rossi" [ngModel]="name()" (ngModelChange)="name.set($event)"
+                 [class.is-invalid]="touched() && errors().name">
+          @if (touched() && errors().name) {
+            <span class="field__error"><app-icon name="alert" [size]="13" /> Indica come dobbiamo chiamarti</span>
+          }
+        </label>
+
+        <label class="field">
+          <span class="field__label">Email</span>
+          <input class="field__input" type="email" name="email" autocomplete="email"
+                 placeholder="nome@esempio.it" [ngModel]="email()" (ngModelChange)="email.set($event)"
+                 [class.is-invalid]="touched() && errors().email">
+          @if (touched() && errors().email) {
+            <span class="field__error"><app-icon name="alert" [size]="13" /> Serve un indirizzo valido</span>
+          }
+        </label>
+
+        <label class="field auth__field">
+          <span class="field__label">Password</span>
+          <span class="auth__password">
+            <input class="field__input" [type]="reveal() ? 'text' : 'password'" name="password"
+                   autocomplete="new-password" placeholder="••••••••"
+                   [ngModel]="password()" (ngModelChange)="password.set($event)"
+                   [class.is-invalid]="touched() && errors().password">
+            <button class="auth__reveal" type="button" (click)="reveal.set(!reveal())"
+                    [attr.aria-label]="reveal() ? 'Nascondi la password' : 'Mostra la password'">
+              <app-icon [name]="reveal() ? 'eyeOff' : 'eye'" [size]="17" />
+            </button>
+          </span>
+
+          <span class="gauge">
+            <span class="gauge__track">
+              @for (slot of [1, 2, 3, 4]; track slot) {
+                <span class="gauge__seg"
+                      [class]="strength() >= slot ? 'is-on-' + strengthTone() : ''"></span>
+              }
+            </span>
+            <small class="gauge__label">{{ strengthLabel() }}</small>
+          </span>
+        </label>
+
+        <label class="field">
+          <span class="field__label">Conferma password</span>
+          <input class="field__input" type="password" name="confirm" autocomplete="new-password"
+                 placeholder="••••••••" [ngModel]="confirm()" (ngModelChange)="confirm.set($event)"
+                 [class.is-invalid]="touched() && errors().confirm">
+          @if (touched() && errors().confirm) {
+            <span class="field__error"><app-icon name="alert" [size]="13" /> Le due password non coincidono</span>
+          }
+        </label>
+
+        <label class="auth__terms">
+          <input type="checkbox" name="accepted" [ngModel]="accepted()"
+                 (ngModelChange)="accepted.set($event)">
+          Accetto le condizioni di prenotazione e il trattamento dei dati per la
+          gestione del soggiorno.
+        </label>
+        @if (touched() && errors().accepted) {
+          <span class="field__error"><app-icon name="alert" [size]="13" /> Serve il tuo consenso per procedere</span>
+        }
+
+        <button class="btn btn--brass btn--wide auth__submit" type="submit" [disabled]="busy()">
+          @if (busy()) { Creazione in corso… } @else { Crea l'account }
+        </button>
+      </form>
+
+      <p class="auth__switch">
+        Hai già un account?
+        <a routerLink="/login">Accedi</a>
+      </p>
+    </div>
+  </section>
+
+</div>

@@ -1,0 +1,68 @@
+<div class="console" [class.console--open]="navOpen()">
+
+  <aside class="rail">
+    <a class="rail__brand" routerLink="/">
+      <span class="rail__gem" aria-hidden="true"></span>
+      <span class="rail__word">Golden<em>Stay</em></span>
+    </a>
+    <p class="rail__tag">Pannello di gestione</p>
+
+    <nav class="rail__nav">
+      @for (link of links; track link.path) {
+        <a class="rail__link" [routerLink]="link.path" routerLinkActive="is-active"
+           [routerLinkActiveOptions]="{ exact: link.exact }" (click)="navOpen.set(false)">
+          <app-icon [name]="link.icon" [size]="18" />
+          {{ link.label }}
+        </a>
+      }
+    </nav>
+
+    <div class="rail__foot">
+      <a class="rail__back" routerLink="/">
+        <app-icon name="arrowLeft" [size]="15" />
+        Torna al sito
+      </a>
+
+      <div class="rail__user">
+        <span class="rail__avatar">{{ initials() }}</span>
+        <span class="rail__ident">
+          <strong>{{ auth.currentUser()?.name || 'Amministratore' }}</strong>
+          <small>{{ auth.currentUser()?.email }}</small>
+        </span>
+        <button class="rail__exit" type="button" aria-label="Esci" (click)="logout()">
+          <app-icon name="logout" [size]="17" />
+        </button>
+      </div>
+    </div>
+  </aside>
+
+  <div class="pane">
+    <header class="pane__head">
+      <button class="pane__burger" type="button" aria-label="Apri il menu"
+              (click)="navOpen.set(!navOpen())">
+        <app-icon [name]="navOpen() ? 'close' : 'menu'" [size]="20" />
+      </button>
+
+      <div class="pane__intro">
+        <p class="eyebrow">{{ eyebrow }}</p>
+        <h1 class="pane__title">{{ heading }}</h1>
+        @if (subtitle) {
+          <p class="pane__subtitle">{{ subtitle }}</p>
+        }
+      </div>
+
+      <div class="pane__actions">
+        <ng-content select="[slot=actions]" />
+      </div>
+    </header>
+
+    <div class="pane__body">
+      <ng-content />
+    </div>
+  </div>
+
+  @if (navOpen()) {
+    <button class="console__scrim" type="button" aria-label="Chiudi il menu"
+            (click)="navOpen.set(false)"></button>
+  }
+</div>

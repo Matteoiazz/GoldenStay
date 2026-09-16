@@ -1,16 +1,21 @@
 import { TestBed } from '@angular/core/testing';
+import { provideRouter } from '@angular/router';
+import { provideHttpClient } from '@angular/common/http';
+import { provideHttpClientTesting } from '@angular/common/http/testing';
 
 import { BookingService } from './booking';
 
-describe('Booking', () => {
+describe('BookingService', () => {
   let service: BookingService;
 
   beforeEach(() => {
-    TestBed.configureTestingModule({});
+    TestBed.configureTestingModule({
+      providers: [provideRouter([]), provideHttpClient(), provideHttpClientTesting()],
+    });
     service = TestBed.inject(BookingService);
   });
 
-  it('should be created', () => {
+  it('viene creato', () => {
     expect(service).toBeTruthy();
   });
 });

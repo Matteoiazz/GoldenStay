@@ -1,0 +1,55 @@
+.chips { display: inline-flex; gap: 6px; }
+
+.chip {
+  padding: 8px 18px;
+  border: 1px solid var(--line);
+  border-radius: var(--r-pill);
+  background: var(--paper);
+  font-size: 12.5px;
+  font-weight: 400;
+  color: var(--text-2);
+  transition: border-color .25s var(--ease), background-color .25s var(--ease),
+              color .25s var(--ease);
+}
+
+.chip:hover { border-color: var(--brass); color: var(--brass-deep); }
+
+.chip.is-on {
+  border-color: var(--ink);
+  background: var(--ink);
+  color: var(--text-invert);
+}
+
+.cell-ref {
+  font-variant-numeric: tabular-nums;
+  font-weight: 500;
+  color: var(--text-3);
+}
+
+.cell-guest,
+.cell-stay { display: flex; flex-direction: column; min-width: 150px; }
+
+.cell-guest strong,
+.cell-stay strong { font-size: 14px; font-weight: 500; white-space: nowrap; }
+
+.cell-guest small,
+.cell-stay small {
+  font-size: 12.5px;
+  font-weight: 300;
+  color: var(--text-3);
+}
+
+.cell-total {
+  font-weight: 500;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+.cell-muted { color: var(--line); }
+
+/* Le righe annullate restano leggibili ma arretrano visivamente. */
+tr.is-void .cell-guest strong,
+tr.is-void .cell-stay strong,
+tr.is-void .cell-total { color: var(--text-3); }
+
+tr.is-void .cell-total { text-decoration: line-through; }

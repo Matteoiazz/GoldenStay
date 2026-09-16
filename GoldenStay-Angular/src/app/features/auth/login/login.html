@@ -1,1 +1,65 @@
-<p>login works!</p>
+<div class="auth">
+
+  <aside class="auth__art auth__art--login">
+    <div class="auth__art-scrim"></div>
+    <div class="auth__art-body">
+      <p class="eyebrow">GoldenStay · Tropea</p>
+      <blockquote class="auth__quote">
+        La sveglia più bella è quella del mare che batte sotto la finestra.
+      </blockquote>
+      <p class="auth__cite">Giulia e Marco — soggiorno di maggio</p>
+    </div>
+  </aside>
+
+  <section class="auth__panel">
+    <div class="auth__form">
+      <p class="eyebrow">Area riservata</p>
+      <h1 class="auth__title">Bentornato</h1>
+      <p class="auth__lede">Accedi per completare una prenotazione o consultare i tuoi soggiorni.</p>
+
+      @if (error()) {
+        <p class="auth__alert">
+          <app-icon name="alert" [size]="16" />
+          {{ error() }}
+        </p>
+      }
+
+      <form (ngSubmit)="submit()" novalidate>
+        <label class="field">
+          <span class="field__label">Email</span>
+          <input class="field__input" type="email" name="email" autocomplete="email"
+                 placeholder="nome@esempio.it" [ngModel]="email()"
+                 (ngModelChange)="email.set($event)">
+        </label>
+
+        <label class="field auth__field">
+          <span class="field__label">Password</span>
+          <span class="auth__password">
+            <input class="field__input" [type]="reveal() ? 'text' : 'password'" name="password"
+                   autocomplete="current-password" placeholder="••••••••"
+                   [ngModel]="password()" (ngModelChange)="password.set($event)">
+            <button class="auth__reveal" type="button" (click)="reveal.set(!reveal())"
+                    [attr.aria-label]="reveal() ? 'Nascondi la password' : 'Mostra la password'">
+              <app-icon [name]="reveal() ? 'eyeOff' : 'eye'" [size]="17" />
+            </button>
+          </span>
+        </label>
+
+        <button class="btn btn--brass btn--wide auth__submit" type="submit" [disabled]="busy()">
+          @if (busy()) { Accesso in corso… } @else { Accedi }
+        </button>
+      </form>
+
+      <button class="auth__demo" type="button" (click)="fillDemo()">
+        <app-icon name="key" [size]="15" />
+        Usa le credenziali dimostrative dell'amministratore
+      </button>
+
+      <p class="auth__switch">
+        Non hai ancora un account?
+        <a routerLink="/register">Registrati</a>
+      </p>
+    </div>
+  </section>
+
+</div>

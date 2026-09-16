@@ -2,48 +2,50 @@ import { Routes } from '@angular/router';
 import { authGuard } from './core/guards/auth-guard';
 
 export const routes: Routes = [
-
-  // Home Page con la lista stanze
   {
     path: '',
-    loadComponent: () => import('./features/room-list/room-list.component').then(m => m.RoomListComponent)
+    title: 'GoldenStay — Dimore d\'autore sulla Costa degli Dei',
+    loadComponent: () =>
+      import('./features/room-list/room-list.component').then(m => m.RoomListComponent),
   },
-
-  // Dettaglio Stanza
   {
     path: 'room/:id',
-    loadComponent: () => import('./features/room-detail/room-detail').then(m => m.RoomDetail)
+    title: 'La camera — GoldenStay',
+    loadComponent: () => import('./features/room-detail/room-detail').then(m => m.RoomDetail),
   },
-
-  // Login e Registrazione
   {
     path: 'login',
-    loadComponent: () => import('./features/auth/login/login').then(m => m.Login)
+    title: 'Accedi — GoldenStay',
+    loadComponent: () => import('./features/auth/login/login').then(m => m.Login),
   },
   {
     path: 'register',
-    loadComponent: () => import('./features/auth/register/register').then(m => m.Register)
+    title: 'Registrati — GoldenStay',
+    loadComponent: () => import('./features/auth/register/register').then(m => m.Register),
   },
 
-  //PARTE PROTETTA
-
+  // Back office: riservato agli amministratori.
   {
     path: 'admin-dashboard',
-    loadComponent: () => import('./features/admin/admin-dashboard/admin-dashboard').then(m => m.AdminDashboard),
-    canActivate: [authGuard] // <--- IL LUCCHETTO
-  },
-  {
-    path: 'create-room',
-    loadComponent: () => import('./features/admin/create-room/create-room').then(m => m.CreateRoomComponent),
-    canActivate: [authGuard] // <--- IL LUCCHETTO
+    title: 'Camere — Back office',
+    canActivate: [authGuard],
+    loadComponent: () =>
+      import('./features/admin/admin-dashboard/admin-dashboard').then(m => m.AdminDashboard),
   },
   {
     path: 'admin/booking',
-    loadComponent: () => import('./features/admin/admin-booking/admin-booking').then(m => m.AdminBookingsComponent),
-    canActivate: [authGuard] // <--- IL LUCCHETTO
+    title: 'Prenotazioni — Back office',
+    canActivate: [authGuard],
+    loadComponent: () =>
+      import('./features/admin/admin-booking/admin-booking').then(m => m.AdminBookingsComponent),
+  },
+  {
+    path: 'create-room',
+    title: 'Nuova camera — Back office',
+    canActivate: [authGuard],
+    loadComponent: () =>
+      import('./features/admin/create-room/create-room').then(m => m.CreateRoomComponent),
   },
 
-  //  GESTIONE ERRORI
-  // Se l'utente scrive un indirizzo a caso, lo riportiamo alla Home
-  { path: '**', redirectTo: '' }
+  { path: '**', redirectTo: '' },
 ];

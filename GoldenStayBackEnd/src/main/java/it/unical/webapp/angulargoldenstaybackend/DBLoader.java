@@ -10,6 +10,9 @@ import org.springframework.stereotype.Component;
 @Component
 public class DBLoader implements CommandLineRunner {
 
+    private static final String IMG = "https://images.unsplash.com/";
+    private static final String FIT = "?auto=format&fit=crop&w=1200&q=80";
+
     private final RoomRepository roomRepository;
     private final UserRepository userRepository;
 
@@ -23,10 +26,18 @@ public class DBLoader implements CommandLineRunner {
 
         // 1. Inserimento Stanze
         if (roomRepository.count() == 0) {
-            roomRepository.save(new Room("Suite Vista Mare", "Vista mozzafiato sull'oceano.", 250.00, "https://images.unsplash.com/photo-1571003123894-1f0594d2b5d9", 2));
-            roomRepository.save(new Room("Camera Deluxe", "Spaziosa e moderna.", 180.00, "https://images.unsplash.com/photo-1611892440504-42a792e24d32", 2));
-            roomRepository.save(new Room("Family Suite", "Per tutta la famiglia.", 350.00, "https://images.unsplash.com/photo-1596394516093-501ba68a0ba6", 4));
-            roomRepository.save(new Room("Attico Esclusivo", "Lusso sfrenato con jacuzzi.", 500.00, "https://images.unsplash.com/photo-1631049307264-da0f29a2622e", 2));
+            roomRepository.save(new Room("Suite Vista Mare",
+                    "Vista mozzafiato sul golfo, letto king size e bagno in pietra locale.",
+                    250.00, IMG + "photo-1571003123894-1f0594d2b5d9" + FIT, 2));
+            roomRepository.save(new Room("Camera Deluxe",
+                    "Spaziosa e moderna, con balcone privato affacciato sul lungomare.",
+                    180.00, IMG + "photo-1611892440504-42a792e24d32" + FIT, 3));
+            roomRepository.save(new Room("Family Suite",
+                    "Due camere comunicanti, angolo cottura e vista sul promontorio.",
+                    350.00, IMG + "photo-1596394516093-501ba68a0ba6" + FIT, 4));
+            roomRepository.save(new Room("Attico Esclusivo",
+                    "Ultimo piano con jacuzzi in terrazza e accesso privato all'ascensore.",
+                    500.00, IMG + "photo-1616594039964-ae9021a400a0" + FIT, 2));
 
             System.out.println("✅ Stanze inserite nel Database!");
         }

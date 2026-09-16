@@ -1,0 +1,222 @@
+<app-hero-search />
+
+<!-- ------------------------------------------------------------ garanzie -->
+<section class="assurances">
+  <div class="shell assurances__grid">
+    @for (item of assurances; track item.title) {
+      <div class="assurance">
+        <span class="assurance__glyph"><app-icon [name]="item.icon" [size]="21" /></span>
+        <div>
+          <p class="assurance__title">{{ item.title }}</p>
+          <p class="assurance__text">{{ item.text }}</p>
+        </div>
+      </div>
+    }
+  </div>
+</section>
+
+<!-- -------------------------------------------------------------- camere -->
+<section class="rooms" id="camere">
+  <div class="shell">
+
+    <header class="rooms__head">
+      <div>
+        <p class="eyebrow">
+          @if (rooms.hasDates()) { Disponibili per le tue date } @else { La collezione }
+        </p>
+        <h2 class="title rooms__title">Camere e suite</h2>
+      </div>
+
+      <div class="rooms__tools">
+        <p class="rooms__count">
+          @if (rooms.loading()) {
+            Ricerca in corso…
+          } @else {
+            {{ visibleRooms().length }}
+            {{ visibleRooms().length === 1 ? 'sistemazione' : 'sistemazioni' }}
+            @if (rooms.hasDates()) {
+              · {{ rooms.nights() }} {{ rooms.nights() === 1 ? 'notte' : 'notti' }}
+            }
+          }
+        </p>
+
+        <label class="sorter">
+          <app-icon name="sliders" [size]="16" />
+          <select class="sorter__select" [value]="sort()"
+                  (change)="sort.set($any($event.target).value)" aria-label="Ordina le camere">
+            @for (option of sortOptions; track option.key) {
+              <option [value]="option.key">{{ option.label }}</option>
+            }
+          </select>
+          <app-icon name="chevronDown" [size]="14" />
+        </label>
+      </div>
+    </header>
+
+    @if (rooms.loading()) {
+      <div class="grid">
+        @for (item of skeletons; track $index) {
+          <div class="ghost">
+            <div class="skeleton ghost__image"></div>
+            <div class="skeleton ghost__line ghost__line--title"></div>
+            <div class="skeleton ghost__line"></div>
+            <div class="skeleton ghost__line ghost__line--short"></div>
+          </div>
+        }
+      </div>
+    } @else if (rooms.failed()) {
+      <div class="notice">
+        <span class="notice__glyph notice__glyph--warn"><app-icon name="alert" [size]="24" /></span>
+        <h3 class="notice__title">Catalogo non raggiungibile</h3>
+        <p class="notice__text">
+          Non riusciamo a contattare il servizio prenotazioni. Riprova fra qualche istante.
+        </p>
+        <button class="btn btn--ghost btn--sm" type="button" (click)="retry()">
+          <app-icon class="btn__icon" name="refresh" [size]="15" /> Riprova
+        </button>
+      </div>
+    } @else if (visibleRooms().length === 0) {
+      <div class="notice">
+        <span class="notice__glyph"><app-icon name="search" [size]="24" /></span>
+        <h3 class="notice__title">Nessuna camera per questi criteri</h3>
+        <p class="notice__text">
+          Prova a spostare le date di qualche giorno o a ridurre il numero di ospiti:
+          in alta stagione le suite si liberano in fretta.
+        </p>
+      </div>
+    } @else {
+      <div class="grid">
+        @for (room of visibleRooms(); track room.id) {
+          <article class="room rise" [style.animation-delay]="$index * 70 + 'ms'">
+            <a class="room__media imgbox" [routerLink]="['/room', room.id]" tabindex="-1" aria-hidden="true">
+              <img appImageFallback [src]="room.imageUrl" [alt]="room.title" loading="lazy">
+              <span class="room__capacity">
+                <app-icon name="guests" [size]="14" /> {{ room.capacity }}
+              </span>
+            </a>
+
+            <div class="room__body">
+              <h3 class="room__title">
+                <a [routerLink]="['/room', room.id]">{{ room.title }}</a>
+              </h3>
+
+              <p class="room__text">
+                {{ room.description || 'Camera con vista, arredi su misura e bagno in pietra locale.' }}
+              </p>
+
+              <div class="room__rule"></div>
+
+              @if (rooms.hasDates()) {
+                @let quote = quoteFor(room);
+                <div class="room__price">
+                  <div class="room__amounts">
+                    @if (quote.saving > 0) {
+                      <span class="room__was">{{ quote.standard | currency: 'EUR' }}</span>
+                    }
+                    <span class="room__total">{{ quote.total | currency: 'EUR' }}</span>
+                  </div>
+                  <p class="room__basis">
+                    totale per {{ quote.nights }} {{ quote.nights === 1 ? 'notte' : 'notti' }} ·
+                    {{ room.pricePerNight | currency: 'EUR' }} a notte
+                  </p>
+                  <span class="badge"
+                        [class.badge--pine]="quote.saving > 0"
+                        [class.badge--brass]="quote.surcharge">
+                    {{ quote.tariff }}
+                  </span>
+                </div>
+              } @else {
+                <div class="room__price">
+                  <div class="room__amounts">
+                    <span class="room__total">{{ room.pricePerNight | currency: 'EUR' }}</span>
+                    <span class="room__unit">a notte</span>
+                  </div>
+                  <p class="room__basis">tasse e servizi inclusi</p>
+                </div>
+              }
+
+              <a class="room__cta" [routerLink]="['/room', room.id]">
+                Scopri la camera
+                <app-icon class="btn__icon btn__icon--slide" name="arrowRight" [size]="16" />
+              </a>
+            </div>
+          </article>
+        }
+      </div>
+    }
+  </div>
+</section>
+
+<!-- ---------------------------------------------------------- esperienza -->
+<section class="story" id="esperienza">
+  <div class="shell story__grid">
+    <div class="story__art">
+      <img class="story__img story__img--tall"
+           src="https://images.unsplash.com/photo-1618773928121-c32242e63f39?auto=format&fit=crop&w=900&q=80"
+           alt="Camera con vista sul mare" loading="lazy">
+      <img class="story__img story__img--wide"
+           src="https://images.unsplash.com/photo-1540541338287-41700207dee6?auto=format&fit=crop&w=900&q=80"
+           alt="Terrazza affacciata sulla scogliera" loading="lazy">
+    </div>
+
+    <div class="story__text">
+      <p class="eyebrow">L'esperienza</p>
+      <h2 class="title">Una casa sul promontorio, non un albergo qualsiasi</h2>
+      <p class="lede">
+        Undici chiavi soltanto, un ascensore scavato nella roccia e una terrazza
+        che al tramonto diventa il posto migliore del paese. Il resto lo lasciamo
+        al mare.
+      </p>
+
+      <ul class="story__list">
+        <li><app-icon name="waves" [size]="18" /> Accesso diretto alla spiaggia privata</li>
+        <li><app-icon name="coffee" [size]="18" /> Colazione servita al tavolo, non a buffet</li>
+        <li><app-icon name="wifi" [size]="18" /> Fibra in tutte le camere, davvero</li>
+        <li><app-icon name="star" [size]="18" /> Concierge per barche, ristoranti ed escursioni</li>
+      </ul>
+
+      <a class="btn btn--ghost" href="#camere">
+        Guarda le camere
+        <app-icon class="btn__icon btn__icon--slide" name="arrowRight" [size]="16" />
+      </a>
+    </div>
+  </div>
+</section>
+
+<!-- ------------------------------------------------------------- tariffe -->
+<section class="rates" id="tariffe">
+  <div class="shell">
+    <header class="rates__head">
+      <p class="eyebrow">Trasparenza</p>
+      <h2 class="title">Come si compone il prezzo</h2>
+      <p class="lede rates__lede">
+        Nessun supplemento nascosto: il totale che vedi al momento della ricerca
+        è quello che pagherai. Applichiamo sempre la condizione più conveniente
+        fra quelle disponibili.
+      </p>
+    </header>
+
+    <div class="rates__grid">
+      @for (rate of rates; track rate.name) {
+        <article class="rate" [class]="'rate--' + rate.tone">
+          <p class="rate__value">{{ rate.value }}</p>
+          <h3 class="rate__name">{{ rate.name }}</h3>
+          <p class="rate__text">{{ rate.text }}</p>
+        </article>
+      }
+    </div>
+  </div>
+</section>
+
+<!-- ----------------------------------------------------------- richiamo -->
+<section class="closing">
+  <div class="shell closing__inner">
+    <p class="eyebrow eyebrow--bare">Ancora indeciso?</p>
+    <h2 class="closing__title">Il concierge risponde<br>anche di domenica</h2>
+    <p class="closing__text">
+      Scrivici le date e ti proponiamo la camera giusta, con la tariffa migliore
+      già calcolata.
+    </p>
+    <a class="btn btn--brass btn--lg" href="#camere">Verifica la disponibilità</a>
+  </div>
+</section>

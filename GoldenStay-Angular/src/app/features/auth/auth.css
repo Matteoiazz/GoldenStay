@@ -1,0 +1,221 @@
+/* Impaginazione condivisa da accesso e registrazione. */
+
+.auth {
+  display: grid;
+  grid-template-columns: 1.05fr 1fr;
+  min-height: calc(100vh - 78px);
+}
+
+/* -------------------------------------------------------------- vetrina -- */
+
+.auth__art {
+  position: relative;
+  display: flex;
+  align-items: flex-end;
+  overflow: hidden;
+  background: var(--ink) center / cover no-repeat;
+  color: var(--text-invert);
+}
+
+.auth__art--login {
+  background-image: url('https://images.unsplash.com/photo-1520250497591-112f2f40a3f4?auto=format&fit=crop&w=1400&q=80');
+}
+
+.auth__art--register {
+  background-image: url('https://images.unsplash.com/photo-1512918728675-ed5a9ecdebfd?auto=format&fit=crop&w=1400&q=80');
+}
+
+.auth__art-scrim {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(to top, rgba(20, 17, 14, .9) 0%, rgba(20, 17, 14, .3) 55%, rgba(20, 17, 14, .5) 100%);
+}
+
+.auth__art-body {
+  position: relative;
+  padding: 56px 60px 64px;
+  max-width: 30rem;
+}
+
+.auth__quote {
+  margin: 20px 0 0;
+  font-family: var(--serif);
+  font-optical-sizing: auto;
+  font-variation-settings: 'SOFT' 30, 'WONK' 1;
+  font-size: clamp(1.7rem, 2.6vw, 2.35rem);
+  font-style: italic;
+  font-weight: 380;
+  line-height: 1.22;
+  letter-spacing: -.015em;
+}
+
+.auth__cite {
+  margin-top: 18px;
+  font-size: 12.5px;
+  font-weight: 300;
+  letter-spacing: .06em;
+  color: rgba(251, 247, 240, .6);
+}
+
+/* --------------------------------------------------------------- pannello */
+
+.auth__panel {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 64px 40px;
+  background: var(--paper);
+}
+
+.auth__form { width: min(420px, 100%); }
+
+.auth__title { margin-top: 14px; font-size: clamp(2.2rem, 4vw, 2.9rem); }
+
+.auth__lede {
+  margin: 12px 0 32px;
+  font-size: 14.5px;
+  font-weight: 300;
+  line-height: 1.65;
+  color: var(--text-3);
+}
+
+.auth__alert {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 22px;
+  padding: 13px 16px;
+  border-radius: var(--r-sm);
+  background: var(--rust-wash);
+  font-size: 13.5px;
+  font-weight: 400;
+  color: var(--rust);
+  animation: rise .35s var(--ease-out) both;
+}
+
+.auth__alert app-icon { flex: none; }
+
+form { display: flex; flex-direction: column; gap: 18px; }
+
+.auth__field { position: relative; }
+
+.auth__password { position: relative; display: block; }
+.auth__password .field__input { padding-right: 48px; }
+
+.auth__reveal {
+  position: absolute;
+  top: 50%;
+  right: 8px;
+  transform: translateY(-50%);
+  display: grid;
+  place-items: center;
+  width: 32px;
+  height: 32px;
+  border: 0;
+  border-radius: 50%;
+  background: none;
+  color: var(--text-3);
+  transition: color .2s, background-color .2s;
+}
+
+.auth__reveal:hover { background: var(--sand); color: var(--brass-deep); }
+
+.auth__submit { margin-top: 6px; }
+
+/* ------------------------------------------------------------- forza pw -- */
+
+.gauge { margin-top: 12px; }
+
+.gauge__track {
+  display: flex;
+  gap: 5px;
+}
+
+.gauge__seg {
+  height: 3px;
+  flex: 1;
+  border-radius: var(--r-pill);
+  background: var(--sand-deep);
+  transition: background-color .35s var(--ease);
+}
+
+.gauge__seg.is-on-weak   { background: var(--rust); }
+.gauge__seg.is-on-fair   { background: var(--brass-warm); }
+.gauge__seg.is-on-strong { background: var(--pine); }
+
+.gauge__label {
+  display: block;
+  margin-top: 8px;
+  font-size: 12px;
+  font-weight: 300;
+  color: var(--text-3);
+}
+
+/* ---------------------------------------------------------------- extra -- */
+
+.auth__demo {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  width: 100%;
+  margin-top: 20px;
+  padding: 13px 16px;
+  border: 1px dashed var(--line);
+  border-radius: var(--r-sm);
+  background: var(--sand);
+  font-size: 12.5px;
+  font-weight: 300;
+  color: var(--text-2);
+  text-align: left;
+  transition: border-color .3s var(--ease), color .3s var(--ease);
+}
+
+.auth__demo:hover { border-color: var(--brass); color: var(--brass-deep); }
+.auth__demo app-icon { color: var(--brass); flex: none; }
+
+.auth__terms {
+  display: flex;
+  align-items: flex-start;
+  gap: 11px;
+  font-size: 12.5px;
+  font-weight: 300;
+  line-height: 1.55;
+  color: var(--text-3);
+  cursor: pointer;
+}
+
+.auth__terms input {
+  width: 17px;
+  height: 17px;
+  margin: 2px 0 0;
+  flex: none;
+  accent-color: var(--brass);
+  cursor: pointer;
+}
+
+.auth__switch {
+  margin-top: 26px;
+  padding-top: 24px;
+  border-top: 1px solid var(--line-soft);
+  font-size: 14px;
+  font-weight: 300;
+  color: var(--text-3);
+}
+
+.auth__switch a {
+  font-weight: 500;
+  color: var(--brass-deep);
+  border-bottom: 1px solid transparent;
+  transition: border-color .3s var(--ease);
+}
+
+.auth__switch a:hover { border-bottom-color: currentColor; }
+
+/* -------------------------------------------------------------- adattivo -- */
+
+@media (max-width: 900px) {
+  .auth { grid-template-columns: 1fr; min-height: 0; }
+  .auth__art { min-height: 260px; }
+  .auth__art-body { padding: 40px 28px 36px; }
+  .auth__panel { padding: 48px 24px 64px; }
+}

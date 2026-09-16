@@ -1,107 +1,85 @@
-import { Component, inject } from '@angular/core';
-import { CommonModule } from '@angular/common';
-import { ReactiveFormsModule, FormBuilder, Validators, FormGroup } from '@angular/forms';
-import { RouterLink } from '@angular/router';
+import { Component, computed, inject, signal } from '@angular/core';
+import { HttpErrorResponse } from '@angular/common/http';
+import { FormsModule } from '@angular/forms';
+import { Router, RouterLink } from '@angular/router';
+
 import { AuthService } from '../../../core/services/auth';
+import { NotifyService } from '../../../shared/notify/notify';
+import { Icon } from '../../../shared/icon/icon';
 
 @Component({
   selector: 'app-register',
   standalone: true,
-  imports: [CommonModule, ReactiveFormsModule, RouterLink], // Importiamo ReactiveFormsModule
-  template: `
-    <div class="auth-container">
-      <h2>Crea un account</h2>
-      <p class="subtitle">Unisciti a GoldenStay per prenotare soggiorni da sogno.</p>
-
-      <form [formGroup]="registerForm" (ngSubmit)="onSubmit()">
-
-        <div class="form-group">
-          <label>Nome Completo</label>
-          <input type="text" formControlName="name" placeholder="Mario Rossi">
-          @if (registerForm.get('name')?.touched && registerForm.get('name')?.invalid) {
-            <small class="error">Il nome è obbligatorio</small>
-          }
-        </div>
-
-        <div class="form-group">
-          <label>Email</label>
-          <input type="email" formControlName="email" placeholder="nome@esempio.com">
-          @if (registerForm.get('email')?.touched && registerForm.get('email')?.invalid) {
-            <small class="error">Inserisci un'email valida</small>
-          }
-        </div>
-
-        <div class="form-group">
-          <label>Password</label>
-          <input type="password" formControlName="password" placeholder="******">
-          @if (registerForm.get('password')?.touched && registerForm.get('password')?.invalid) {
-            <small class="error">Minimo 6 caratteri</small>
-          }
-        </div>
-
-        <div class="form-group">
-          <label>Conferma Password</label>
-          <input type="password" formControlName="confirmPassword" placeholder="******">
-        </div>
-
-        @if (registerForm.hasError('passwordMismatch') && registerForm.get('confirmPassword')?.touched) {
-          <small class="error-box">Le password non coincidono!</small>
-        }
-
-        <button type="submit" [disabled]="registerForm.invalid">
-          Registrati
-        </button>
-
-      </form>
-
-      <p class="footer-text">Hai già un account? <a routerLink="/login">Accedi qui</a></p>
-    </div>
-  `,
-  styles: [`
-    .auth-container { max-width: 450px; margin: 50px auto; padding: 40px; background: white; border-radius: 12px; box-shadow: 0 4px 20px rgba(0,0,0,0.05); text-align: center; }
-    h2 { margin-bottom: 10px; color: #2c3e50; }
-    .subtitle { color: #888; margin-bottom: 30px; font-size: 0.95rem; }
-    .form-group { text-align: left; margin-bottom: 20px; }
-    label { display: block; margin-bottom: 8px; font-weight: bold; color: #2c3e50; font-size: 0.9rem; }
-    input { width: 100%; padding: 12px; border: 1px solid #ddd; border-radius: 6px; font-size: 1rem; box-sizing: border-box; transition: 0.3s; }
-    input:focus { border-color: #d4af37; outline: none; }
-
-    /* Errori */
-    .error { color: #e74c3c; font-size: 0.8rem; margin-top: 5px; display: block; }
-    .error-box { color: #e74c3c; background: #fadbd8; padding: 10px; border-radius: 4px; display: block; margin-bottom: 15px; font-weight: bold; font-size: 0.9rem; }
-
-    button { width: 100%; padding: 14px; background: #d4af37; color: white; border: none; border-radius: 6px; font-weight: bold; cursor: pointer; font-size: 1rem; transition: 0.3s; }
-    button:hover { background: #b39028; }
-    button:disabled { background: #eee; color: #aaa; cursor: not-allowed; }
-
-    .footer-text { margin-top: 20px; font-size: 0.9rem; }
-    a { color: #2c3e50; text-decoration: none; font-weight: bold; }
-  `]
+  imports: [FormsModule, RouterLink, Icon],
+  templateUrl: './register.html',
+  styleUrls: ['../auth.css'],
 })
 export class Register {
-  private fb = inject(FormBuilder);
-  private authService = inject(AuthService);
+  private auth = inject(AuthService);
+  private router = inject(Router);
+  private notify = inject(NotifyService);
 
-  // Creiamo il form con validatori
-  registerForm: FormGroup = this.fb.group({
-    name: ['', Validators.required],
-    email: ['', [Validators.required, Validators.email]],
-    password: ['', [Validators.required, Validators.minLength(6)]],
-    confirmPassword: ['', Validators.required]
-  }, { validators: this.passwordMatchValidator }); // Aggiungiamo il validatore personalizzato
+  protected name = signal('');
+  protected email = signal('');
+  protected password = signal('');
+  protected confirm = signal('');
+  protected accepted = signal(false);
+  protected reveal = signal(false);
+  protected busy = signal(false);
+  protected touched = signal(false);
+  protected error = signal('');
 
-  // Validatore personalizzato per controllare se pass e confirmPass sono uguali
-  passwordMatchValidator(form: FormGroup) {
-    const password = form.get('password')?.value;
-    const confirmPassword = form.get('confirmPassword')?.value;
-    return password === confirmPassword ? null : { passwordMismatch: true };
-  }
+  /** Quattro criteri indipendenti: lunghezza, maiuscola, cifra, simbolo. */
+  protected strength = computed(() => {
+    const value = this.password();
+    let score = 0;
+    if (value.length >= 8) score++;
+    if (/[A-Z]/.test(value)) score++;
+    if (/\d/.test(value)) score++;
+    if (/[^A-Za-z0-9]/.test(value)) score++;
+    return score;
+  });
 
-  onSubmit() {
-    if (this.registerForm.valid) {
-      const { name, email, password } = this.registerForm.value;
-      // Chiamiamo il service per registrare l'utente
-      this.authService.register(name, email, password);
-    }
+  protected strengthTone = computed(() =>
+    this.strength() <= 1 ? 'weak' : this.strength() === 2 ? 'fair' : 'strong',
+  );
+
+  protected strengthLabel = computed(() => {
+    if (!this.password()) return 'Almeno 6 caratteri, meglio se con numeri e simboli.';
+    return ['Molto debole', 'Debole', 'Accettabile', 'Buona', 'Ottima'][this.strength()];
+  });
+
+  protected errors = computed(() => ({
+    name: this.name().trim().length < 2,
+    email: !/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(this.email().trim()),
+    password: this.password().length < 6,
+    confirm: this.confirm() !== this.password() || !this.confirm(),
+    accepted: !this.accepted(),
+  }));
+
+  protected valid = computed(() => !Object.values(this.errors()).some(Boolean));
+
+  protected submit() {
+    this.touched.set(true);
+    this.error.set('');
+    if (!this.valid()) return;
+
+    this.busy.set(true);
+
+    this.auth.register(this.name().trim(), this.email().trim(), this.password()).subscribe({
+      next: user => {
+        this.busy.set(false);
+        this.notify.success('Account creato', `Benvenuto in GoldenStay, ${user.name || 'ospite'}.`);
+        this.router.navigate(['/']);
+      },
+      error: (response: HttpErrorResponse) => {
+        this.busy.set(false);
+        this.error.set(
+          response.status === 400
+            ? response.error?.error || 'Esiste già un account con questa email.'
+            : 'Servizio momentaneamente non raggiungibile. Riprova fra poco.',
+        );
+      },
+    });
   }
 }
