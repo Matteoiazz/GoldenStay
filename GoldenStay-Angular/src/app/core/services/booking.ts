@@ -2,6 +2,7 @@ import { Injectable, computed, inject, signal } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Observable } from 'rxjs';
 import { finalize, tap } from 'rxjs/operators';
+import { environment } from '../../../environments/environment';
 
 export interface Booking {
   id: number;
@@ -24,7 +25,7 @@ export interface BookingDraft {
 @Injectable({ providedIn: 'root' })
 export class BookingService {
   private http = inject(HttpClient);
-  private apiUrl = 'http://localhost:8080/api/bookings';
+  private apiUrl = `${environment.apiUrl}/bookings`;
 
   readonly bookings = signal<Booking[]>([]);
   readonly loading = signal(false);

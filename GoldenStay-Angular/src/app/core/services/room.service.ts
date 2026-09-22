@@ -3,6 +3,7 @@ import { HttpClient, HttpParams } from '@angular/common/http';
 import { finalize, tap } from 'rxjs/operators';
 
 import { Room } from '../models/room.model';
+import { environment } from '../../../environments/environment';
 
 export interface SearchCriteria {
   guests: number;
@@ -13,7 +14,7 @@ export interface SearchCriteria {
 @Injectable({ providedIn: 'root' })
 export class RoomService {
   private http = inject(HttpClient);
-  private apiUrl = 'http://localhost:8080/api/rooms';
+  private apiUrl = `${environment.apiUrl}/rooms`;
 
   readonly rooms = signal<Room[]>([]);
   readonly loading = signal(false);

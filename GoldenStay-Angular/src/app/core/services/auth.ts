@@ -3,6 +3,7 @@ import { Router } from '@angular/router';
 import { HttpClient } from '@angular/common/http';
 import { Observable } from 'rxjs';
 import { tap } from 'rxjs/operators';
+import { environment } from '../../../environments/environment';
 
 export interface User {
   id?: number;
@@ -19,7 +20,7 @@ export class AuthService {
   private router = inject(Router);
   private http = inject(HttpClient);
 
-  private apiUrl = 'http://localhost:8080/api/users';
+  private apiUrl = `${environment.apiUrl}/users`;
 
   readonly currentUser = signal<User | null>(restore());
 

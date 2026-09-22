@@ -1,4 +1,0 @@
-spring.datasource.url=jdbc:postgresql://localhost:5432/goldenstay_db
-spring.datasource.username=TUO_USERNAME
-spring.datasource.password=TUA_PASSWORD
-spring.jpa.hibernate.ddl-auto=update

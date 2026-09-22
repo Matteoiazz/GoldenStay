@@ -1,0 +1,32 @@
+# Blueprint per Render: pubblica il backend e crea il database con un solo
+# "New +" → "Blueprint", puntando a questo repository.
+# Dopo il primo deploy, in "Environment" del servizio web imposta anche
+# ALLOWED_ORIGINS con il dominio Vercel del frontend (per es.
+# https://goldenstay.vercel.app), separando più origini con una virgola.
+services:
+  - type: web
+    name: goldenstay-backend
+    runtime: docker
+    dockerfilePath: ./GoldenStayBackEnd/Dockerfile
+    dockerContext: ./GoldenStayBackEnd
+    plan: free
+    envVars:
+      - key: SPRING_DATASOURCE_URL
+        fromDatabase:
+          name: goldenstay-db
+          property: connectionString
+      - key: SPRING_DATASOURCE_USERNAME
+        fromDatabase:
+          name: goldenstay-db
+          property: user
+      - key: SPRING_DATASOURCE_PASSWORD
+        fromDatabase:
+          name: goldenstay-db
+          property: password
+      - key: ALLOWED_ORIGINS
+        value: http://localhost:4200
+
+databases:
+  - name: goldenstay-db
+    plan: free
+    databaseName: goldenstay_db
