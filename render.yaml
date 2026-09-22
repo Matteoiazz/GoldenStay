@@ -11,10 +11,21 @@ services:
     dockerContext: ./GoldenStayBackEnd
     plan: free
     envVars:
-      - key: SPRING_DATASOURCE_URL
+      # Host/porta/nome database separati, non connectionString: quella di
+      # Render è "postgresql://...", mentre Spring vuole un URL con prefisso
+      # "jdbc:postgresql://...". application.properties li ricompone da qui.
+      - key: PGHOST
         fromDatabase:
           name: goldenstay-db
-          property: connectionString
+          property: host
+      - key: PGPORT
+        fromDatabase:
+          name: goldenstay-db
+          property: port
+      - key: PGDATABASE
+        fromDatabase:
+          name: goldenstay-db
+          property: database
       - key: SPRING_DATASOURCE_USERNAME
         fromDatabase:
           name: goldenstay-db
